@@ -1,5 +1,5 @@
 {
-    "name": "funding_arb",
+    "name": "perp-funding-arbitrageur",
     "version": "1.0.0",
     "main": "index.js",
     "license": "MIT",
