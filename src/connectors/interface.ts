@@ -1,8 +1,9 @@
-import { MarketResponse, Order, PlaceOrder, Position } from './common';
+import { Market, MarketResponse, Order, PlaceOrder, Position } from './common';
 import { Method } from 'axios';
 
 export enum Exchange {
     Ftx,
+    PerpetualProtocolV2
 }
 
 export interface Request {
@@ -16,12 +17,12 @@ export interface Request {
 export interface HttpClient {
     placeOrder(params: PlaceOrder): Promise<Order>;
     getMarkets(): Promise<MarketResponse[]>;
-    getPosition(marketName: string): Promise<Position | null>;
+    getPosition(market: Market): Promise<Position | null>;
     /**
      * Closes entire position with a market order.
-     * @param marketName
+     * @param market
      */
-    closePosition(marketName: string): Promise<Order | null>;
-    cancelAllOrders(marketName?: string): Promise<string>;
-    getOpenOrders(marketName?: string): Promise<Order[]>;
+    closePosition(market: Market): Promise<Order | null>;
+    cancelAllOrders(market?: Market): Promise<string>;
+    getOpenOrders(market?: Market): Promise<Order[]>;
 }

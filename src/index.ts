@@ -7,7 +7,7 @@ require('dotenv').config();
 
 async function main() {
     const tokens: string[] = ['ETH', 'BTC'];
-    const markets = tokens.map((token) => FtxHelpers.getFtxMarket(MarketType.Future, token));
+    const markets = tokens.map((token) => FtxHelpers.getMarket(MarketType.Future, token));
     const client = await getHttpClient(Exchange.Ftx, markets);
     // const res = await client.placeOrder({
     //     market: 'ETH-PERP',

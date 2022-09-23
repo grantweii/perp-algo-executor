@@ -133,24 +133,24 @@ export class FtxClient implements HttpClient {
         return GetMarkets.deserialize(response.data.result);
     }
 
-    async getPosition(marketName: string): Promise<Position | null> {
+    async getPosition(market: Market): Promise<Position | null> {
         const response: AxiosResponse<Response<FtxPosition[]>> = await this.client(
             this.requestConfig(new GetPosition())
         );
         if (!response.data.success || !response.data.result || response.data.error) {
             throw new Error(response.data.error);
         }
-        const position = response.data.result.find((p) => p.future == marketName);
+        const position = response.data.result.find((p) => p.future == market.internalName);
         if (!position || position.size === 0) return null;
         return GetPosition.deserialize(position);
     }
 
-    async closePosition(marketName: string): Promise<Order | null> {
-        const position = await this.getPosition(marketName);
+    async closePosition(market: Market): Promise<Order | null> {
+        const position = await this.getPosition(market);
         if (!position) return null;
 
         const order = await this.placeOrder({
-            market: marketName,
+            market: market.internalName,
             side: position.side === Side.Buy ? Side.Sell : Side.Buy,
             price: null,
             type: OrderType.Market,
@@ -162,9 +162,9 @@ export class FtxClient implements HttpClient {
         return order;
     }
 
-    async cancelAllOrders(marketName?: string): Promise<string> {
+    async cancelAllOrders(market?: Market): Promise<string> {
         const response: AxiosResponse<Response<string>> = await this.client(
-            this.requestConfig(new CancelAllOrders({ market: marketName }))
+            this.requestConfig(new CancelAllOrders({ market: market?.internalName }))
         );
         if (!response.data.success || !response.data.result || response.data.error) {
             throw new Error(response.data.error);
@@ -172,9 +172,9 @@ export class FtxClient implements HttpClient {
         return response.data.result;
     }
 
-    async getOpenOrders(marketName?: string): Promise<Order[]> {
+    async getOpenOrders(market?: Market): Promise<Order[]> {
         const response: AxiosResponse<Response<Order[]>> = await this.client(
-            this.requestConfig(new GetOpenOrders({ market: marketName }))
+            this.requestConfig(new GetOpenOrders({ market: market?.internalName }))
         );
         if (!response.data.success || !response.data.result || response.data.error) {
             throw new Error(response.data.error);

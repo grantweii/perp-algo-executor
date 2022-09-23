@@ -4,7 +4,6 @@ import { Market, MarketType, OrderType, Side } from '../common';
 import { Exchange, HttpClient } from '../interface';
 import { getHttpClient } from '..';
 import { describe } from 'mocha';
-import { AxiosError } from 'axios';
 require('dotenv').config();
 
 describe('Ftx client', () => {
@@ -12,9 +11,23 @@ describe('Ftx client', () => {
     let markets: Market[];
     before(async () => {
         const tokens = ['ETH', 'BTC'];
-        markets = tokens.map((token) => FtxHelpers.getFtxMarket(MarketType.Future, token));
+        markets = tokens.map((token) => FtxHelpers.getMarket(MarketType.Future, token));
         client = await getHttpClient(Exchange.Ftx, markets);
     });
+
+    describe('invalid market', () => {
+        it('client should fail to instantiate', async () => {
+            try {
+                const tokens = ['ABCDE'];
+                markets = tokens.map((token) => FtxHelpers.getMarket(MarketType.Future, token));
+                client = await getHttpClient(Exchange.Ftx, markets);
+            } catch (err) {
+                if (err instanceof Error) {
+                    expect(err.message).to.be.eql('Failed to initialise ftx client. Not all markets are valid')
+                }
+            }
+        })
+    })
 
     describe('place limit order', () => {
         it('should work', async () => {
@@ -38,10 +51,11 @@ describe('Ftx client', () => {
             expect(order.postOnly).to.be.eql(true);
         });
         it('should cancel existing orders', async () => {
-            const existingOrders = await client.getOpenOrders('ETH-PERP');
+            const market = FtxHelpers.getMarket(MarketType.Future, 'ETH');
+            const existingOrders = await client.getOpenOrders(market);
             expect(existingOrders.length).to.be.eql(1);
-            await client.cancelAllOrders('ETH-PERP');
-            const orders = await client.getOpenOrders('ETH-PERP');
+            await client.cancelAllOrders(market);
+            const orders = await client.getOpenOrders(market);
             expect(orders.length).to.be.eql(0);
         });
     });
@@ -67,7 +81,8 @@ describe('Ftx client', () => {
             expect(order.postOnly).to.be.eql(false);
         });
         it('should close the previous market order position', async () => {
-            const order = await client.closePosition('BTC-PERP');
+            const market = FtxHelpers.getMarket(MarketType.Future, 'BTC');
+            const order = await client.closePosition(market);
             if (!order) throw new Error('Position doesnt exist even though it should');
             expect(order.market).to.be.eql('BTC-PERP');
             expect(order.side).to.be.eql(Side.Buy);

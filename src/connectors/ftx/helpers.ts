@@ -3,7 +3,7 @@ import { Market, MarketType } from '../common';
 import { Exchange } from '../interface';
 
 export default class FtxHelpers {
-    static getFtxParameters(): FtxParameters {
+    static getParameters(): FtxParameters {
         if (!process.env.FTX_API_KEY) {
             throw new Error('FTX_API_KEY must be provided');
         }
@@ -17,7 +17,7 @@ export default class FtxHelpers {
         };
     }
 
-    static getFtxMarket(marketType: MarketType, token: string): Market {
+    static getMarket(marketType: MarketType, token: string): Market {
         switch (marketType) {
             case MarketType.Future: {
                 return {

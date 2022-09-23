@@ -2,8 +2,8 @@ import { Market } from './common';
 import { FtxClient } from './ftx';
 import FtxHelpers from './ftx/helpers';
 import { Exchange, HttpClient } from './interface';
-
-export * from './ftx';
+import { PerpV2Client } from './perpetual_protocol_v2';
+import PerpV2Helpers from './perpetual_protocol_v2/helpers';
 
 export async function getHttpClient(
     exchange: Exchange,
@@ -11,10 +11,20 @@ export async function getHttpClient(
 ): Promise<HttpClient> {
     switch (exchange) {
         case Exchange.Ftx: {
-            const parameters = FtxHelpers.getFtxParameters();
+            const parameters = FtxHelpers.getParameters();
             const ftxClient = new FtxClient(parameters);
             await ftxClient.init(requestedMarkets);
             return ftxClient;
         }
+        case Exchange.PerpetualProtocolV2: {
+            throw new Error('Please instantiate the Perp V2 client using getPerpV2Client');
+        }
     }
+}
+
+export async function getPerpV2Client(requestedMarkets: Market[]) {
+    const parameters = PerpV2Helpers.getParameters();
+    const perpClient = new PerpV2Client(parameters);
+    await perpClient.init(requestedMarkets);
+    return perpClient;
 }
