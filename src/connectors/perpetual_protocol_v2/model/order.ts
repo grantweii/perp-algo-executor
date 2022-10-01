@@ -1,7 +1,7 @@
-import { Side } from '../../common';
+import { Market, Side } from '../../common';
 
 export type PlacePerpV2Order = {
-    market: string,
+    market: Market,
     slippage: number,
     side: Side,
     size: number,

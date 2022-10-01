@@ -1,54 +1,19 @@
 import { Position as PerpPosition, PositionSide } from '@perp/sdk-curie';
-import { Market, Position, Side } from '../connectors/common';
+import { Market, OrderType, Position, Side } from '../connectors/common';
 import { HttpClient } from '../connectors/interface';
 import { PerpV2Client } from '../connectors/perpetual_protocol_v2';
 import { percentage_difference_as_natural } from '../utils/math';
-
-enum State {
-    OPENING = 'OPENING',
-    CLOSING = 'CLOSING',
-}
-
-enum ExecutionType {
-    Spread = 'spread',
-    Twap = 'twap',
-}
-
-enum Direction {
-    Long = 'long',
-    Short = 'short',
-}
-
-enum PositionState {
-    VALID = 'VALID',
-    WRONG_DIRECTION = 'WRONG_DIRECTION',
-    UNBALANCED = 'UNBALANCED',
-}
-
-type SpreadParameters = {
-    strategy: ExecutionType.Spread;
-    maxSpread: number;
-    orderNotional: number;
-};
-
-type TwapParameters = {
-    strategy: ExecutionType.Twap;
-    parts: number;
-    period: string;
-};
-
-type ExecutionParameters = SpreadParameters | TwapParameters;
-
-type ValidPosition = {
-    positionState: PositionState.VALID;
-};
-
-type InvalidPosition = {
-    positionState: PositionState.UNBALANCED | PositionState.WRONG_DIRECTION;
-    message: string;
-};
-
-type PositionValidity = ValidPosition | InvalidPosition;
+import { Spread } from './execution/spread';
+import { Twap } from './execution/twap';
+import {
+    Direction,
+    ExecutionParameters,
+    ExecutionType,
+    FundingExecution,
+    PositionState,
+    PositionValidity,
+    State,
+} from './interface';
 
 export type FundingRateArbitrageParameters = {
     hedgeClient: HttpClient;
@@ -60,17 +25,20 @@ export type FundingRateArbitrageParameters = {
     perpDirection: Direction;
     closeOnly: boolean;
     pollInterval?: number; // milliseconds
+    slippage?: number; // in bps
 };
 
 export default class FundingRateArbitrage {
     private readonly INTERVAL: number = 2000;
+    private readonly slippage: number = 100;
     private readonly hedgeClient: HttpClient;
     private readonly perpClient: PerpV2Client;
     private readonly perpMarket: Market;
     private readonly hedgeMarket: Market;
     private readonly totalNotional: number;
-    private readonly execution: ExecutionParameters;
+    private readonly execution: FundingExecution;
     private readonly perpDirection: Direction;
+    private readonly hedgeDirection: Direction;
     private readonly closeOnly: boolean = false;
 
     private state: State = State.OPENING;
@@ -82,10 +50,18 @@ export default class FundingRateArbitrage {
         this.perpMarket = params.perpMarket;
         this.hedgeMarket = params.hedgeMarket;
         this.totalNotional = params.totalNotional;
-        this.execution = params.execution;
         this.perpDirection = params.perpDirection;
+        this.hedgeDirection = params.perpDirection === Direction.Long ? Direction.Short : Direction.Long;
         if (params.closeOnly) this.closeOnly = true;
         if (params.pollInterval) this.INTERVAL = params.pollInterval;
+        if (params.slippage) this.slippage = params.slippage;
+        let execution: FundingExecution;
+        if (params.execution.strategy === ExecutionType.Spread) {
+            execution = new Spread(params.execution, params.perpClient, params.hedgeClient);
+        } else {
+            execution = new Twap(params.execution, params.totalNotional);
+        }
+        this.execution = execution;
     }
 
     /**
@@ -97,11 +73,19 @@ export default class FundingRateArbitrage {
         const hedgePosition = await this.hedgeClient.getPosition(this.hedgeMarket);
         const validity = this.validatePositions(perpPosition, hedgePosition, 100);
         if (validity.positionState !== PositionState.VALID) {
-            throw new Error(`Position state ${validity.positionState}. Reason: ${validity.message}`);
+            throw new Error(
+                `Position state ${validity.positionState}. Reason: ${validity.message}`
+            );
         }
         if (this.closeOnly) {
             this.state = State.CLOSING;
-        } else if (perpPosition && percentage_difference_as_natural(perpPosition.openNotionalOriginal.toNumber(), this.totalNotional) > 50) {
+        } else if (
+            perpPosition &&
+            percentage_difference_as_natural(
+                perpPosition.openNotionalOriginal.toNumber(),
+                this.totalNotional
+            ) > 50
+        ) {
             this.state = State.OPENING;
         }
         setInterval(() => this.run(), this.INTERVAL);
@@ -225,26 +209,90 @@ export default class FundingRateArbitrage {
             // 1. validate position
             const validity = this.validatePositions(perpPosition, hedgePosition, 50);
             if (validity.positionState === PositionState.UNBALANCED) {
+                const perpPositionSize = perpPosition?.sizeAbs?.toNumber() || 0;
+                const hedgePositionSize = hedgePosition?.size || 0;
+                const sizeDiff = Math.abs(perpPositionSize - hedgePositionSize);
                 switch (this.state) {
                     case State.OPENING: {
-                        const perpPositionSize = perpPosition?.sizeAbs?.toNumber() || 0;
-                        const hedgePositionSize = hedgePosition?.size || 0;
-                        const sizeDiff = Math.abs(perpPositionSize - hedgePositionSize);
                         if (sizeDiff > 0) {
-                            // upsize hedge
-                            // UP TO HERE
-                            // await this.perpClient.placeOrder()
+                            // upsize hedge with market order
+                            await this.hedgeClient.placeOrder({
+                                market: this.hedgeMarket.internalName,
+                                side: this.hedgeDirection === Direction.Long ? Side.Buy : Side.Sell,
+                                price: null,
+                                type: OrderType.Market,
+                                size: sizeDiff,
+                                reduceOnly: false,
+                                ioc: true,
+                                postOnly: false,
+                            });
                         } else {
-                            // upsize perp
+                            // upsize perp with market order
+                            await this.perpClient.placeOrder({
+                                market: this.perpMarket,
+                                slippage: 5, // TODO: verify, does this stand for pcnt?
+                                side: this.perpDirection === Direction.Long ? Side.Buy : Side.Sell,
+                                size: sizeDiff,
+                            });
                         }
                     }
                     case State.CLOSING: {
-
+                        if (sizeDiff > 0) {
+                            // downsize perp with market order
+                            await this.perpClient.placeOrder({
+                                market: this.perpMarket,
+                                slippage: 5, // TODO: verify, does this stand for pcnt?
+                                side: this.perpDirection === Direction.Long ? Side.Buy : Side.Sell,
+                                size: sizeDiff,
+                            });
+                        } else {
+                            // downsize hedge with market order
+                            await this.hedgeClient.placeOrder({
+                                market: this.hedgeMarket.internalName,
+                                side: this.hedgeDirection === Direction.Long ? Side.Buy : Side.Sell,
+                                price: null,
+                                type: OrderType.Market,
+                                size: sizeDiff,
+                                reduceOnly: true,
+                                ioc: true,
+                                postOnly: false,
+                            });
+                        }
                     }
                 }
             } else if (validity.positionState === PositionState.WRONG_DIRECTION) {
-
+                // notify user and exit program
+                console.log(`Error: WRONG_DIRECTION. ${validity.message}`);
+                process.exit(1);
             }
-        } catch (err) {}
+
+            // 2. check execution condition
+            const canExecuteResponse = this.execution.canExecute();
+            if (!canExecuteResponse) return;
+
+            // always execute perp first
+            const perpTx = await this.perpClient.placeOrder({
+                market: this.perpMarket,
+                slippage: this.slippage, // TODO: what is this in? bps, pcnt? natural?
+                side: this.perpDirection === Direction.Long ? Side.Buy : Side.Sell,
+                size: canExecuteResponse.orderSize,
+            });
+            // TODO: how to check perp Tx was successful, dont want to use subgraph
+
+            await this.hedgeClient.placeOrder({
+                market: this.hedgeMarket.internalName,
+                side: this.hedgeDirection === Direction.Long ? Side.Buy : Side.Sell,
+                price: null,
+                type: OrderType.Market,
+                size: canExecuteResponse.orderSize,
+                reduceOnly: false,
+                ioc: true,
+                postOnly: false,
+            });
+        } catch (err: unknown) {
+            console.log(`Failed runner iteration: ${(err as Error).message}`);
+        } finally {
+            this.running = false;
+        }
     }
 }

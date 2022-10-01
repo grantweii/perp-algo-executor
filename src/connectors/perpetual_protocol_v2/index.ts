@@ -42,7 +42,7 @@ export class PerpV2Client {
         if (!this.client.clearingHouse)
             throw new Error('Perp client Clearinghouse has not been instantiated');
         const positionDraft = await this.client.clearingHouse.createPositionDraft({
-            tickerSymbol: params.market,
+            tickerSymbol: params.market.internalName, // TODO: check if correct
             side: params.side === Side.Buy ? PositionSide.LONG : PositionSide.SHORT,
             amountInput: new Big(params.size),
             isAmountInputBase: true,
@@ -72,5 +72,14 @@ export class PerpV2Client {
             market.internalName
         );
         return position || null;
+    }
+
+    async getPrice(market: Market) {
+        if (!this.client.clearingHouse)
+            throw new Error('Perp client Clearinghouse has not been instantiated');
+            // up to here
+        const perpMarket = (Metadata.contracts as any)[`v${market.baseToken}`];
+        const price = await this.client.markets.getMarket({ tickerSymbol: perpMarket. })
+
     }
 }
