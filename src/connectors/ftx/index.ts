@@ -7,6 +7,9 @@ import {
     Position,
     Side,
     OrderType,
+    QuoteParams,
+    Quote,
+    Orderbook,
 } from '../common';
 import { HttpClient, Request } from '../interface';
 import axios, {
@@ -17,8 +20,9 @@ import axios, {
 } from 'axios';
 import { CancelAllOrders, FtxOrder, GetOpenOrders, PlaceOrder } from './model/order';
 import { createHmac } from 'crypto';
-import { FtxMarket, GetMarkets } from './model/market';
+import { FtxMarket, GetMarkets, GetOrderbook } from './model/market';
 import { FtxPosition, GetPosition } from './model/position';
+import { Direction } from '../../strategies/interface';
 
 export type FtxParameters = {
     apiKey: string;
@@ -180,5 +184,44 @@ export class FtxClient implements HttpClient {
             throw new Error(response.data.error);
         }
         return response.data.result;
+    }
+
+    private async getOrderbook(market: Market, depth?: number) {
+        const response: AxiosResponse<Response<Orderbook>> = await this.client(
+            this.requestConfig(new GetOrderbook({ marketName: market.internalName, depth }))
+        );
+        if (!response.data.success || !response.data.result || response.data.error) {
+            throw new Error(response.data.error);
+        }
+        return response.data.result;
+    }
+
+    async quote(params: QuoteParams): Promise<Quote> {
+        const orderbook = await this.getOrderbook(params.market, 100);
+        let runningNotional = 0;
+        let runningSize = 0;
+        let i = 0;
+        let price;
+        let volume;
+        const ladder = params.direction === Direction.Long ? orderbook.asks : orderbook.bids;
+        while (runningNotional < params.orderNotional) {
+            price = ladder[i][0];
+            volume = ladder[i][1];
+            const notional = price * volume;
+            const remainingNotional = params.orderNotional - runningNotional;
+            if (remainingNotional < notional) {
+                const remainingSize = remainingNotional / price;
+                runningSize += remainingSize;
+                runningNotional += remainingNotional;
+            } else {
+                runningSize += volume;
+                runningNotional += notional;
+            }
+            i++;
+        }
+        return {
+            averagePrice: runningNotional / runningSize,
+            orderSize: runningSize,
+        };
     }
 }

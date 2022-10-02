@@ -1,3 +1,4 @@
+import { Direction } from '../strategies/interface';
 import { Exchange } from './interface';
 
 export enum MarketType {
@@ -71,6 +72,11 @@ export type Market = {
     exchange: Exchange;
 };
 
+export type Orderbook = {
+    bids: [number, number][];
+    asks: [number, number][];
+};
+
 export type Position = {
     market: string;
     size: number;
@@ -78,4 +84,15 @@ export type Position = {
     entryPrice?: number;
     unrealizedPnl: number;
     liquidationPrice?: number;
+};
+
+export type QuoteParams = {
+    market: Market;
+    orderNotional: number;
+    direction: Direction;
+};
+
+export type Quote = {
+    averagePrice: number;
+    orderSize: number;
 };

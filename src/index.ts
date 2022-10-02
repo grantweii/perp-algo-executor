@@ -1,25 +1,18 @@
-import { getHttpClient } from './connectors';
+import { getHttpClient, getPerpV2Client } from './connectors';
 import { Market, MarketType, OrderType, Side } from './connectors/common';
 import FtxHelpers from './connectors/ftx/helpers';
 import { Exchange } from './connectors/interface';
+import { PerpV2Client } from './connectors/perpetual_protocol_v2';
+import PerpV2Helpers from './connectors/perpetual_protocol_v2/helpers';
+import { Direction } from './strategies/interface';
+import { BigNumber } from 'ethers';
+import Big from 'big.js';
+
 export * from './connectors';
 require('dotenv').config();
 
 async function main() {
-    const tokens: string[] = ['ETH', 'BTC'];
-    const markets = tokens.map((token) => FtxHelpers.getMarket(MarketType.Future, token));
-    const client = await getHttpClient(Exchange.Ftx, markets);
-    // const res = await client.placeOrder({
-    //     market: 'ETH-PERP',
-    //     side: Side.Buy,
-    //     type: OrderType.Market,
-    //     size: 0.001,
-    //     reduceOnly: false,
-    //     ioc: false,
-    //     postOnly: false,
-    //     price: null,
-    // });
-    // console.log(res);
+    
 }
 
 main()

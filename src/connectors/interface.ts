@@ -1,4 +1,4 @@
-import { Market, MarketResponse, Order, PlaceOrder, Position } from './common';
+import { Market, MarketResponse, Order, PlaceOrder, Position, Quote, QuoteParams } from './common';
 import { Method } from 'axios';
 
 export enum Exchange {
@@ -25,4 +25,9 @@ export interface HttpClient {
     closePosition(market: Market): Promise<Order | null>;
     cancelAllOrders(market?: Market): Promise<string>;
     getOpenOrders(market?: Market): Promise<Order[]>;
+    /**
+     * Calculates the expected average price given order notional.
+     * @param params 
+     */
+    quote(params: QuoteParams): Promise<Quote>;
 }
