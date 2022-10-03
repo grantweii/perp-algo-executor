@@ -6,18 +6,18 @@ export type FtxPosition = {
     future: string;
     size: number;
     side: Side;
-    net_size: number;
+    netSize: number;
     longOrderSize: number;
     shortOrderSize: number;
     cost: number;
-    entryPrice?: number;
+    entryPrice: number;
     unrealizedPnl: number;
     realizedPnl: number;
     initialMarginRequirement: number;
     maintenanceMarginRequirement: number;
     openSize: number;
     collateralUsed: number;
-    estimatedLiquidationPrice?: number;
+    estimatedLiquidationPrice: number;
 };
 
 export class GetPosition implements Request {

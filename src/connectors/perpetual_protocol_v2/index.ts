@@ -52,28 +52,29 @@ export class PerpV2Client {
         });
         const slippageAsNatural = params.slippage ? bpsToNatural(params.slippage) : 0;
         const tx = await this.client.clearingHouse.openPosition(positionDraft, new Big(slippageAsNatural));
-        return tx;
+        return tx.transaction.wait(1);
     }
 
-    async closePosition(market: Market, slippage: number) {
+    async closePosition(market: Market, slippage?: number) {
         if (!this.client.positions)
             throw new Error('Perp client Positions has not been instantiated');
         if (!this.client.clearingHouse)
             throw new Error('Perp client Clearinghouse has not been instantiated');
         const position = await this.client.positions.getTakerPositionByTickerSymbol(
-            market.internalName
+            market.internalName,
         );
         if (!position)
             throw new Error(`Perp position does not exist for market ${market.internalName}`);
-        const tx = await this.client.clearingHouse.closePosition(position, new Big(slippage));
-        return tx;
+        const tx = await this.client.clearingHouse.closePosition(position, new Big(slippage || 0));
+        return tx.transaction.wait(1);
     }
 
     async getPosition(market: Market) {
         if (!this.client.positions)
             throw new Error('Perp client Positions has not been instantiated');
         const position = await this.client.positions.getTakerPositionByTickerSymbol(
-            market.internalName
+            market.internalName,
+            { cache: false }
         );
         return position || null;
     }

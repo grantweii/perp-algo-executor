@@ -81,9 +81,9 @@ export type Position = {
     market: string;
     size: number;
     side: Side;
-    entryPrice?: number;
+    entryPrice: number;
     unrealizedPnl: number;
-    liquidationPrice?: number;
+    liquidationPrice: number;
 };
 
 export type QuoteParams = {

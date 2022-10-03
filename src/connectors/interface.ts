@@ -2,8 +2,8 @@ import { Market, MarketResponse, Order, PlaceOrder, Position, Quote, QuoteParams
 import { Method } from 'axios';
 
 export enum Exchange {
-    Ftx,
-    PerpetualProtocolV2
+    Ftx = 'ftx',
+    PerpetualProtocolV2 = 'perpetual_protocol_v2'
 }
 
 export interface Request {

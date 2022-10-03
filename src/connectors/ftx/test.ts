@@ -11,7 +11,7 @@ describe('Ftx client', () => {
     let markets: Market[];
     before(async () => {
         const tokens = ['ETH', 'BTC'];
-        markets = tokens.map((token) => FtxHelpers.getMarket(MarketType.Future, token));
+        markets = tokens.map((token) => FtxHelpers.getMarket(token, MarketType.Future));
         client = await getHttpClient(Exchange.Ftx, markets);
     });
 
@@ -19,7 +19,7 @@ describe('Ftx client', () => {
         it('client should fail to instantiate', async () => {
             try {
                 const tokens = ['ABCDE'];
-                markets = tokens.map((token) => FtxHelpers.getMarket(MarketType.Future, token));
+                markets = tokens.map((token) => FtxHelpers.getMarket(token, MarketType.Future));
                 client = await getHttpClient(Exchange.Ftx, markets);
             } catch (err) {
                 if (err instanceof Error) {
@@ -51,7 +51,7 @@ describe('Ftx client', () => {
             expect(order.postOnly).to.be.eql(true);
         });
         it('should cancel existing orders', async () => {
-            const market = FtxHelpers.getMarket(MarketType.Future, 'ETH');
+            const market = FtxHelpers.getMarket('ETH', MarketType.Future);
             const existingOrders = await client.getOpenOrders(market);
             expect(existingOrders.length).to.be.eql(1);
             await client.cancelAllOrders(market);
@@ -66,7 +66,7 @@ describe('Ftx client', () => {
                 price: null,
                 type: OrderType.Market,
                 side: Side.Sell,
-                size: 0.0001,
+                size: 0.001,
                 reduceOnly: false,
                 ioc: true,
                 postOnly: false,
@@ -75,20 +75,20 @@ describe('Ftx client', () => {
             expect(order.side).to.be.eql(Side.Sell);
             expect(order.price).to.be.eql(null);
             expect(order.type).to.be.eql(OrderType.Market);
-            expect(order.size).to.be.eql(0.0001);
+            expect(order.size).to.be.eql(0.001);
             expect(order.reduceOnly).to.be.eql(false);
             expect(order.ioc).to.be.eql(true);
             expect(order.postOnly).to.be.eql(false);
         });
         it('should close the previous market order position', async () => {
-            const market = FtxHelpers.getMarket(MarketType.Future, 'BTC');
+            const market = FtxHelpers.getMarket('BTC', MarketType.Future);
             const order = await client.closePosition(market);
             if (!order) throw new Error('Position doesnt exist even though it should');
             expect(order.market).to.be.eql('BTC-PERP');
             expect(order.side).to.be.eql(Side.Buy);
             expect(order.price).to.be.eql(null);
             expect(order.type).to.be.eql(OrderType.Market);
-            expect(order.size).to.be.eql(0.0001);
+            expect(order.size).to.be.eql(0.001);
             expect(order.reduceOnly).to.be.eql(false);
             expect(order.ioc).to.be.eql(true);
             expect(order.postOnly).to.be.eql(false);

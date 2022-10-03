@@ -1,7 +1,7 @@
 import { Market } from '../../connectors/common';
 import { HttpClient } from '../../connectors/interface';
 import { PerpV2Client } from '../../connectors/perpetual_protocol_v2';
-import { percentage_difference_as_bps } from '../../utils/math';
+import { signed_percentage_difference_as_bps } from '../../utils/math';
 import {
     CanExecuteResponse,
     Direction,
@@ -22,7 +22,7 @@ type SpreadExecutionParameters = {
 export class Spread implements FundingExecution {
     private readonly perpClient: PerpV2Client;
     private readonly hedgeClient: HttpClient;
-    private readonly orderNotional: number;
+    readonly orderNotional: number;
     private readonly maxSpread: number;
     private readonly perpDirection: Direction;
     private readonly hedgeDirection: Direction;
@@ -60,10 +60,12 @@ export class Spread implements FundingExecution {
             shortPrice = hedgeQuote.averagePrice;
             longPrice = perpQuote.averagePrice;
         }
-        const spread = percentage_difference_as_bps(shortPrice, longPrice);
+        const spread = signed_percentage_difference_as_bps(shortPrice, longPrice);
+        console.log(`SPREAD: ${spread}. Perp price: ${perpQuote.averagePrice}. Hedge price: ${hedgeQuote.averagePrice}`);
         if (spread > this.maxSpread) {
             return {
                 orderSize: perpQuote.orderSize,
+                price: perpQuote.averagePrice,
             };
         }
         return false;

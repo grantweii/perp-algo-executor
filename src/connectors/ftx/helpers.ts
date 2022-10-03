@@ -17,7 +17,7 @@ export default class FtxHelpers {
         };
     }
 
-    static getMarket(marketType: MarketType, token: string): Market {
+    static getMarket(token: string, marketType: MarketType): Market {
         switch (marketType) {
             case MarketType.Future: {
                 return {

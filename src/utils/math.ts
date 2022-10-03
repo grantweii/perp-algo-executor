@@ -1,10 +1,10 @@
 
 // https://www.mathsisfun.com/percentage-difference.html
-export const percentage_difference_as_natural = (a: number, b: number) =>
-    Math.abs((a - b) / ((a + b) / 2));
+export const signed_percentage_difference_as_natural = (a: number, b: number) =>
+    (a - b) / ((a + b) / 2);
 
-export const percentage_difference_as_bps = (a: number, b: number) =>
-    Math.abs((a - b) / ((a + b) / 2)) * 10000;
+export const signed_percentage_difference_as_bps = (a: number, b: number) =>
+    (a - b) / ((a + b) / 2) * 10000;
 
 export const bpsToNatural = (bps: number) => bps / 10000;
 

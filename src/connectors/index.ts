@@ -1,4 +1,4 @@
-import { Market } from './common';
+import { Market, MarketType } from './common';
 import { FtxClient } from './ftx';
 import FtxHelpers from './ftx/helpers';
 import { Exchange, HttpClient } from './interface';
@@ -18,6 +18,17 @@ export async function getHttpClient(
         }
         case Exchange.PerpetualProtocolV2: {
             throw new Error('Please instantiate the Perp V2 client using getPerpV2Client');
+        }
+    }
+}
+
+export function getMarket(exchange: Exchange, baseToken: string) {
+    switch (exchange) {
+        case Exchange.Ftx: {
+            return FtxHelpers.getMarket(baseToken, MarketType.Future);
+        }
+        case Exchange.PerpetualProtocolV2: {
+            return PerpV2Helpers.getMarket(baseToken);
         }
     }
 }

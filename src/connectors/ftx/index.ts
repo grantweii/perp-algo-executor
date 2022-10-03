@@ -23,6 +23,7 @@ import { createHmac } from 'crypto';
 import { FtxMarket, GetMarkets, GetOrderbook } from './model/market';
 import { FtxPosition, GetPosition } from './model/position';
 import { Direction } from '../../strategies/interface';
+import Big from 'big.js';
 
 export type FtxParameters = {
     apiKey: string;
@@ -118,8 +119,19 @@ export class FtxClient implements HttpClient {
     }
 
     async placeOrder(params: GenericPlaceOrder): Promise<Order> {
+        const minSize = this.marketInfo[params.market].minSize;
+        if (params.size < minSize) throw new Error(`Failed to send order. Order min size for ${params.market} is ${minSize}`);
+        const sizeDp = -Math.log10(this.marketInfo[params.market].sizeIncrement);
+        const priceDp = -Math.log10(this.marketInfo[params.market].tickSize);
+        const roundedSize = new Big(params.size).round(sizeDp).toNumber();
+        const roundedPrice = params.price ? new Big(params.price).round(priceDp).toNumber() : null;
+        const cleanedParams: GenericPlaceOrder = {
+            ...params,
+            size: roundedSize,
+            price: roundedPrice,
+        };
         const response: AxiosResponse<Response<FtxOrder>> = await this.client(
-            this.requestConfig(new PlaceOrder(params))
+            this.requestConfig(new PlaceOrder(cleanedParams))
         );
         if (!response.data.success || !response.data.result || response.data.error) {
             throw new Error(response.data.error);
