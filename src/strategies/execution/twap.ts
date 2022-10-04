@@ -41,10 +41,10 @@ type TwapExecutionParameters = {
 
 export class Twap implements FundingExecution {
     private readonly perpClient: PerpV2Client;
-    readonly orderNotional: number;
     private readonly period: number; // in ms
     private readonly perpMarket: Market;
     private readonly perpDirection: Direction;
+    readonly orderNotional: number;
     private last: number | null = null; // in ms
 
     constructor(params: TwapExecutionParameters) {
@@ -72,7 +72,7 @@ export class Twap implements FundingExecution {
         const remainingInMs = this.last + this.period - Date.now();
         const remainingMins = Math.floor(remainingInMs / 1000 / 60);
         const remainingSecs = remainingInMs / 1000 % 60;
-        console.log(`TWAP - Remaining: ${remainingMins}m ${remainingSecs}s`);
+        console.log(`${this.perpMarket.baseToken} - TWAP - Remaining: ${remainingMins}m ${remainingSecs}s`);
         return false;
     }
 }

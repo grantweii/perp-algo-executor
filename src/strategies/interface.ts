@@ -15,15 +15,18 @@ export type FundingRateEngineParameters = {
     slippage?: number; // in bps
 };
 
-export type FundingRateEnvParameters = {
-    baseToken: string;
-    hedgeExchange: Exchange,
-    executionParams: ExecutionParameters;
-    totalNotional: number;
-    perpDirection: Direction;
-    closeOnly?: boolean;
-    pollInterval?: number; // milliseconds
-    slippage?: number; // in bps
+export type FundingRateConfig = {
+    STRATEGY: ExecutionType;
+    HEDGE_EXCHANGE: Exchange;
+    TOTAL_NOTIONAL: number;
+    PERP_DIRECTION: Direction;
+    CLOSE_ONLY?: boolean;
+    ORDER_NOTIONAL?: number;
+    MIN_SPREAD?: number; // in bps
+    PARTS?: number;
+    PERIOD?: string;
+    POLL_INTERVAL?: number; // milliseconds
+    SLIPPAGE?: number; // in bps
 };
 
 export enum State {
@@ -49,7 +52,7 @@ export enum PositionState {
 
 export type SpreadParameters = {
     strategy: ExecutionType.Spread;
-    maxSpread: number;
+    minSpread: number;
     orderNotional: number;
 };
 

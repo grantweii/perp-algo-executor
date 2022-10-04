@@ -52,7 +52,7 @@ export class PerpV2Client {
         });
         const slippageAsNatural = params.slippage ? bpsToNatural(params.slippage) : 0;
         const tx = await this.client.clearingHouse.openPosition(positionDraft, new Big(slippageAsNatural));
-        return tx.transaction.wait(1);
+        return tx.transaction.wait(2);
     }
 
     async closePosition(market: Market, slippage?: number) {
@@ -66,7 +66,7 @@ export class PerpV2Client {
         if (!position)
             throw new Error(`Perp position does not exist for market ${market.internalName}`);
         const tx = await this.client.clearingHouse.closePosition(position, new Big(slippage || 0));
-        return tx.transaction.wait(1);
+        return tx.transaction.wait(2);
     }
 
     async getPosition(market: Market) {

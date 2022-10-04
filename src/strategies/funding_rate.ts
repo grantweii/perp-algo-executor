@@ -101,7 +101,7 @@ export default class FundingRateArbEngine {
             this.state = State.OPENING;
         }
         this.runnerInterval = setInterval(() => this.run(), this.INTERVAL);
-        console.log('Funding rate arb successfully initialized');
+        console.log(`${this.perpMarket.baseToken} - Funding rate arb successfully initialized`);
     }
 
     /**
@@ -214,11 +214,11 @@ export default class FundingRateArbEngine {
 
     /**
      * Runner for OPENING state.
-     * @param perpPosition 
-     * @param hedgePosition 
-     * @returns 
+     * @param perpPosition
+     * @param hedgePosition
+     * @returns
      */
-    async pollOpening(perpPosition: PerpPosition | null, hedgePosition: Position | null) {
+    private async pollOpening(perpPosition: PerpPosition | null, hedgePosition: Position | null) {
         // 1. check if position is complete
         if (perpPosition && hedgePosition) {
             const perpEntryNotional = perpPosition.entryPrice.mul(perpPosition.sizeAbs).toNumber();
@@ -231,7 +231,7 @@ export default class FundingRateArbEngine {
                     Math.abs(hedgeEntryNotional - this.totalNotional) < this.acceptableDifference)
             ) {
                 console.log(
-                    `${this.state} funding rate arb complete. Perp notional: ${perpEntryNotional}. Hedge notional: ${hedgeEntryNotional}`
+                    `${this.perpMarket.baseToken} - ${this.state} funding rate arb complete. Perp notional: ${perpEntryNotional}. Hedge notional: ${hedgeEntryNotional}`
                 );
                 clearInterval(this.runnerInterval);
                 return;
@@ -241,14 +241,18 @@ export default class FundingRateArbEngine {
         // 2. validate position
         const validity = this.validatePositions(perpPosition, hedgePosition);
         if (validity.positionState === PositionState.UNBALANCED) {
-            console.log(`Position state: UNBALANCED. Message: ${validity.message}`);
+            console.log(
+                `${this.perpMarket.baseToken} - Position state: UNBALANCED. Message: ${validity.message}`
+            );
             const perpPositionSize = perpPosition?.sizeAbs?.toNumber() || 0;
             const hedgePositionSize = hedgePosition?.size || 0;
             const sizeDiff = perpPositionSize - hedgePositionSize;
             const absSizeDiff = Math.abs(sizeDiff);
             if (sizeDiff > 0) {
                 // upsize hedge with market order
-                console.log(`Upsizing hedge: ${this.hedgeDirection} ${absSizeDiff}`);
+                console.log(
+                    `${this.perpMarket.baseToken} - Upsizing hedge: ${this.hedgeDirection} ${absSizeDiff}`
+                );
                 await this.hedgeClient.placeOrder({
                     market: this.hedgeMarket.internalName,
                     side: this.hedgeDirection === Direction.Long ? Side.Buy : Side.Sell,
@@ -261,7 +265,9 @@ export default class FundingRateArbEngine {
                 });
             } else {
                 // upsize perp with market order
-                console.log(`Upsizing perp: ${this.perpDirection} ${absSizeDiff}`);
+                console.log(
+                    `${this.perpMarket.baseToken} - Upsizing perp: ${this.perpDirection} ${absSizeDiff}`
+                );
                 await this.perpClient.placeOrder({
                     market: this.perpMarket,
                     slippage: this.slippage,
@@ -270,14 +276,19 @@ export default class FundingRateArbEngine {
                 });
             }
         } else if (validity.positionState === PositionState.WRONG_DIRECTION) {
-            // notify user and exit program
-            console.log(`Error: WRONG_DIRECTION. ${validity.message}`);
-            process.exit(1);
+            // notify user and kill polling interval
+            console.log(
+                `${this.perpMarket.baseToken} - Error: WRONG_DIRECTION. ${validity.message}`
+            );
+            clearInterval(this.runnerInterval);
+            return;
         } else {
             // valid position state
             // 3. check execution condition
             const canExecuteResponse = await this.execution.canExecute();
-            console.log(`Execution condition met: ${!!canExecuteResponse}`);
+            console.log(
+                `${this.perpMarket.baseToken} - Execution condition met: ${!!canExecuteResponse}`
+            );
             if (!canExecuteResponse) return;
 
             let orderSize = canExecuteResponse.orderSize;
@@ -289,7 +300,7 @@ export default class FundingRateArbEngine {
             }
 
             console.log(
-                `Executing perp order. ${this.perpDirection} ${canExecuteResponse.orderSize}...`
+                `${this.perpMarket.baseToken} - Executing perp order. ${this.perpDirection} ${canExecuteResponse.orderSize}...`
             );
             // always execute perp first
             await this.perpClient.placeOrder({
@@ -299,7 +310,7 @@ export default class FundingRateArbEngine {
                 size: orderSize,
             });
             console.log(
-                `Executing hedge order. ${this.hedgeDirection} ${canExecuteResponse.orderSize}...`
+                `${this.perpMarket.baseToken} - Executing hedge order. ${this.hedgeDirection} ${canExecuteResponse.orderSize}...`
             );
             await this.hedgeClient.placeOrder({
                 market: this.hedgeMarket.internalName,
@@ -316,14 +327,14 @@ export default class FundingRateArbEngine {
 
     /**
      * Runner for CLOSING state.
-     * @param perpPosition 
-     * @param hedgePosition 
-     * @returns 
+     * @param perpPosition
+     * @param hedgePosition
+     * @returns
      */
-    async pollClosing(perpPosition: PerpPosition | null, hedgePosition: Position | null) {
+    private async pollClosing(perpPosition: PerpPosition | null, hedgePosition: Position | null) {
         // 1. check if position is complete
         if (!perpPosition && !hedgePosition) {
-            console.log(`${this.state} funding rate arb complete`);
+            console.log(`${this.perpMarket.baseToken} - ${this.state} funding rate arb complete`);
             clearInterval(this.runnerInterval);
             return;
         }
@@ -331,14 +342,18 @@ export default class FundingRateArbEngine {
         // 2. validate position
         const validity = this.validatePositions(perpPosition, hedgePosition);
         if (validity.positionState === PositionState.UNBALANCED) {
-            console.log(`Position state: UNBALANCED. Message: ${validity.message}`);
+            console.log(
+                `${this.perpMarket.baseToken} - Position state: UNBALANCED. Message: ${validity.message}`
+            );
             const perpPositionSize = perpPosition?.sizeAbs?.toNumber() || 0;
             const hedgePositionSize = hedgePosition?.size || 0;
             const sizeDiff = perpPositionSize - hedgePositionSize;
             const absSizeDiff = Math.abs(sizeDiff);
             if (sizeDiff > 0) {
                 // downsize perp with market order
-                console.log(`Downsizing perp. ${this.perpDirection} ${absSizeDiff}`);
+                console.log(
+                    `${this.perpMarket.baseToken} - Downsizing perp. ${this.perpDirection} ${absSizeDiff}`
+                );
                 await this.perpClient.placeOrder({
                     market: this.perpMarket,
                     slippage: this.slippage,
@@ -347,7 +362,9 @@ export default class FundingRateArbEngine {
                 });
             } else {
                 // downsize hedge with market order
-                console.log(`Downsizing hedge. ${this.hedgeDirection} ${absSizeDiff}`);
+                console.log(
+                    `${this.perpMarket.baseToken} - Downsizing hedge. ${this.hedgeDirection} ${absSizeDiff}`
+                );
                 await this.hedgeClient.placeOrder({
                     market: this.hedgeMarket.internalName,
                     side: this.hedgeDirection === Direction.Long ? Side.Buy : Side.Sell,
@@ -360,26 +377,31 @@ export default class FundingRateArbEngine {
                 });
             }
         } else if (validity.positionState === PositionState.WRONG_DIRECTION) {
-            // notify user and exit program
-            console.log(`Error: WRONG_DIRECTION. ${validity.message}`);
-            process.exit(1);
+            // notify user and kill polling interval
+            console.log(
+                `${this.perpMarket.baseToken} - Error: WRONG_DIRECTION. ${validity.message}`
+            );
+            clearInterval(this.runnerInterval);
+            return;
         } else {
             // valid position state
             // 3. check execution condition
             const canExecuteResponse = await this.execution.canExecute();
-            console.log(`Execution condition met: ${!!canExecuteResponse}`);
+            console.log(
+                `${this.perpMarket.baseToken} - Execution condition met: ${!!canExecuteResponse}`
+            );
             if (!canExecuteResponse) return;
 
             if ((perpPosition?.sizeAbs?.toNumber() || 0) < canExecuteResponse.orderSize) {
                 // Call explicit close position when we get to the final leg to avoid dust positions
-                console.log('Closing remaining position...');
+                console.log(`${this.perpMarket.baseToken} - Closing remaining position...`);
                 await this.perpClient.closePosition(this.perpMarket);
                 await this.hedgeClient.closePosition(this.hedgeMarket);
                 return;
             }
 
             console.log(
-                `Executing perp order. ${this.perpDirection} ${canExecuteResponse.orderSize}...`
+                `${this.perpMarket.baseToken} - Executing perp order. ${this.perpDirection} ${canExecuteResponse.orderSize}...`
             );
             // always execute perp first
             await this.perpClient.placeOrder({
@@ -389,7 +411,7 @@ export default class FundingRateArbEngine {
                 size: canExecuteResponse.orderSize,
             });
             console.log(
-                `Executing hedge order. ${this.hedgeDirection} ${canExecuteResponse.orderSize}...`
+                `${this.perpMarket.baseToken} - Executing hedge order. ${this.hedgeDirection} ${canExecuteResponse.orderSize}...`
             );
             await this.hedgeClient.placeOrder({
                 market: this.hedgeMarket.internalName,
@@ -404,7 +426,7 @@ export default class FundingRateArbEngine {
         }
     }
 
-    async run() {
+    private async run() {
         if (this.running) return;
         this.running = true;
 
@@ -412,9 +434,9 @@ export default class FundingRateArbEngine {
             const perpPosition = await this.perpClient.getPosition(this.perpMarket);
             const hedgePosition = await this.hedgeClient.getPosition(this.hedgeMarket);
             console.log(
-                `Perp position: ${perpPosition?.sizeAbs || 0}. Hedge position: ${
-                    hedgePosition?.size || 0
-                }`
+                `${this.perpMarket.baseToken} - Perp position: ${
+                    perpPosition?.sizeAbs || 0
+                }. Hedge position: ${hedgePosition?.size || 0}`
             );
 
             if (this.state === State.OPENING) {
@@ -423,7 +445,9 @@ export default class FundingRateArbEngine {
                 await this.pollClosing(perpPosition, hedgePosition);
             }
         } catch (err: unknown) {
-            console.log(`Failed runner iteration: ${(err as Error).message}`);
+            console.log(
+                `${this.perpMarket.baseToken} - Failed runner iteration: ${(err as Error).message}`
+            );
         } finally {
             this.running = false;
         }

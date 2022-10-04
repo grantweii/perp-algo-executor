@@ -22,18 +22,18 @@ type SpreadExecutionParameters = {
 export class Spread implements FundingExecution {
     private readonly perpClient: PerpV2Client;
     private readonly hedgeClient: HttpClient;
-    readonly orderNotional: number;
-    private readonly maxSpread: number;
+    private readonly minSpread: number;
     private readonly perpDirection: Direction;
     private readonly hedgeDirection: Direction;
     private readonly perpMarket: Market;
     private readonly hedgeMarket: Market;
+    readonly orderNotional: number;
 
     constructor(params: SpreadExecutionParameters) {
         this.perpClient = params.perpClient;
         this.hedgeClient = params.hedgeClient;
         this.orderNotional = params.spread.orderNotional;
-        this.maxSpread = params.spread.maxSpread;
+        this.minSpread = params.spread.minSpread;
         this.perpDirection = params.perpDirection;
         this.hedgeDirection = params.hedgeDirection;
         this.perpMarket = params.perpMarket;
@@ -61,8 +61,8 @@ export class Spread implements FundingExecution {
             longPrice = perpQuote.averagePrice;
         }
         const spread = signed_percentage_difference_as_bps(shortPrice, longPrice);
-        console.log(`SPREAD: ${spread}. Perp price: ${perpQuote.averagePrice}. Hedge price: ${hedgeQuote.averagePrice}`);
-        if (spread > this.maxSpread) {
+        console.log(`${this.perpMarket.baseToken} - SPREAD: ${spread}. Perp price: ${perpQuote.averagePrice}. Hedge price: ${hedgeQuote.averagePrice}`);
+        if (spread > this.minSpread) {
             return {
                 orderSize: perpQuote.orderSize,
                 price: perpQuote.averagePrice,

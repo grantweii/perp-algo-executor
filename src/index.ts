@@ -5,82 +5,96 @@ import {
     Direction,
     ExecutionParameters,
     ExecutionType,
-    FundingRateEnvParameters,
+    FundingRateConfig,
 } from './strategies/interface';
 import FundingRateArbEngine from './strategies/funding_rate';
+import Config from './config.json';
 require('dotenv').config();
 
-const getFundingParameters = (): FundingRateEnvParameters => {
-    if (!process.env.STRATEGY) throw new Error(`STRATEGY must be provided in the .env`);
-    if (!process.env.HEDGE_EXCHANGE) throw new Error(`HEDGE_EXCHANGE must be provided in the .env`);
-    if (!Object.values(Exchange).includes(process.env.HEDGE_EXCHANGE as Exchange)) {
-        throw new Error(`HEDGE_EXCHANGE must be one of ${Object.values(Exchange).join(', ')}`);
+const getFundingConfigs = () => {
+    const fundingConfigs = [];
+    for (const [market, config] of Object.entries(
+        Config as unknown as Record<string, FundingRateConfig>
+    )) {
+        if (!config.STRATEGY) throw new Error(`STRATEGY must be provided in the config`);
+        if (!config.HEDGE_EXCHANGE)
+            throw new Error(`HEDGE_EXCHANGE must be provided in the config`);
+        if (!Object.values(Exchange).includes(config.HEDGE_EXCHANGE)) {
+            throw new Error(`HEDGE_EXCHANGE must be one of ${Object.values(Exchange).join(', ')}`);
+        }
+        if (!config.TOTAL_NOTIONAL)
+            throw new Error(`TOTAL_NOTIONAL must be provided in the config`);
+        if (!config.PERP_DIRECTION)
+            throw new Error(`PERP_DIRECTION must be provided in the config`);
+        if (![Direction.Long, Direction.Short].includes(config.PERP_DIRECTION)) {
+            throw new Error(`PERP_DIRECTION must be either 'long' or 'short'`);
+        }
+        let executionParams: ExecutionParameters;
+        if (config.STRATEGY === ExecutionType.Spread) {
+            if (!config.MIN_SPREAD)
+                throw new Error(`MIN_SPREAD must be provided in the config for 'spread' strategy`);
+            if (!config.ORDER_NOTIONAL)
+                throw new Error(
+                    `ORDER_NOTIONAL must be provided in the config for 'spread' strategy`
+                );
+            executionParams = {
+                strategy: ExecutionType.Spread,
+                minSpread: config.MIN_SPREAD,
+                orderNotional: config.ORDER_NOTIONAL,
+            };
+        } else if (config.STRATEGY === ExecutionType.Twap) {
+            if (!config.PARTS)
+                throw new Error(`PARTS must be provided in the config for 'twap' strategy`);
+            if (!config.PERIOD)
+                throw new Error(`PERIOD must be provided in the config for 'twap' strategy`);
+            executionParams = {
+                strategy: ExecutionType.Twap,
+                parts: Number(config.PARTS),
+                period: config.PERIOD,
+            };
+        } else {
+            throw new Error(`STRATEGY must be either 'spread' or 'twap'`);
+        }
+        fundingConfigs.push({
+            baseToken: market,
+            hedgeExchange: config.HEDGE_EXCHANGE,
+            executionParams,
+            totalNotional: config.TOTAL_NOTIONAL,
+            perpDirection: config.PERP_DIRECTION,
+            closeOnly: config.CLOSE_ONLY,
+            pollInterval: config.POLL_INTERVAL,
+            slippage: config.SLIPPAGE,
+        });
     }
-    if (!process.env.BASE_TOKEN) throw new Error(`BASE_TOKEN must be provided in the .env`);
-    if (!process.env.TOTAL_NOTIONAL) throw new Error(`TOTAL_NOTIONAL must be provided in the .env`);
-    if (!process.env.PERP_DIRECTION) throw new Error(`PERP_DIRECTION must be provided in the .env`);
-    if (![Direction.Long, Direction.Short].includes(process.env.PERP_DIRECTION as Direction)) {
-        throw new Error(`PERP_DIRECTION must be either 'long' or 'short'`);
-    }
-    let executionParams: ExecutionParameters;
-    if (process.env.STRATEGY === ExecutionType.Spread) {
-        if (!process.env.MAX_SPREAD)
-            throw new Error(`MAX_SPREAD must be provided in the .env for 'spread' strategy`);
-        if (!process.env.ORDER_NOTIONAL)
-            throw new Error(`ORDER_NOTIONAL must be provided in the .env for 'spread' strategy`);
-        executionParams = {
-            strategy: ExecutionType.Spread,
-            maxSpread: Number(process.env.MAX_SPREAD),
-            orderNotional: Number(process.env.ORDER_NOTIONAL),
-        };
-    } else if (process.env.STRATEGY === ExecutionType.Twap) {
-        if (!process.env.PARTS)
-            throw new Error(`PARTS must be provided in the .env for 'twap' strategy`);
-        if (!process.env.PERIOD)
-            throw new Error(`PERIOD must be provided in the .env for 'twap' strategy`);
-        executionParams = {
-            strategy: ExecutionType.Twap,
-            parts: Number(process.env.PARTS),
-            period: process.env.PERIOD,
-        };
-    } else {
-        throw new Error(`STRATEGY must be either 'spread' or 'twap'`);
-    }
-    return {
-        baseToken: process.env.BASE_TOKEN,
-        hedgeExchange: process.env.HEDGE_EXCHANGE as Exchange,
-        executionParams,
-        totalNotional: Number(process.env.TOTAL_NOTIONAL),
-        perpDirection: process.env.PERP_DIRECTION as Direction,
-        closeOnly: process.env.CLOSE_ONLY === 'true',
-        pollInterval: Number(process.env.POLL_INTERVAL) || undefined,
-        slippage: Number(process.env.SLIPPAGE) || undefined,
-    };
+    return fundingConfigs;
 };
 
 async function main() {
-    const fundingParameters = getFundingParameters();
-    const perpMarket = PerpV2Helpers.getMarket(fundingParameters.baseToken);
-    const hedgeMarket = getMarket(fundingParameters.hedgeExchange, fundingParameters.baseToken);
-    const perpClient = await getPerpV2Client([perpMarket]);
-    const hedgeClient = await getHttpClient(fundingParameters.hedgeExchange, [hedgeMarket]);
-    const fundingRateArbEngine = new FundingRateArbEngine({
-        hedgeClient,
-        perpClient,
-        perpMarket,
-        hedgeMarket,
-        executionParams: fundingParameters.executionParams,
-        totalNotional: fundingParameters.totalNotional,
-        perpDirection: fundingParameters.perpDirection,
-        closeOnly: fundingParameters.closeOnly,
-        pollInterval: fundingParameters.pollInterval,
-        slippage: fundingParameters.slippage,
-    });
-    await fundingRateArbEngine.init();
+    const fundingConfigs = getFundingConfigs();
+    for (const config of fundingConfigs) {
+        const perpMarket = PerpV2Helpers.getMarket(config.baseToken);
+        const hedgeMarket = getMarket(config.hedgeExchange, config.baseToken);
+        const perpClient = await getPerpV2Client([perpMarket]);
+        const hedgeClient = await getHttpClient(config.hedgeExchange, [hedgeMarket]);
+        const fundingRateArbEngine = new FundingRateArbEngine({
+            hedgeClient,
+            perpClient,
+            perpMarket,
+            hedgeMarket,
+            executionParams: config.executionParams,
+            totalNotional: config.totalNotional,
+            perpDirection: config.perpDirection,
+            closeOnly: config.closeOnly,
+            pollInterval: config.pollInterval,
+            slippage: config.slippage,
+        });
+        await fundingRateArbEngine.init();
+    }
 }
 
 main()
     .then()
     .catch((err) => {
         console.log(`Failed to run funding arb. Error: ${err.message}`);
+        process.exit(1);
     });

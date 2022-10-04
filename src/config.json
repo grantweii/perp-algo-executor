@@ -1,0 +1,20 @@
+{
+    "AAVE": {
+        "STRATEGY": "spread",
+        "HEDGE_EXCHANGE": "ftx",
+        "TOTAL_NOTIONAL": 200,
+        "PERP_DIRECTION": "long",
+        "MIN_SPREAD": 5,
+        "ORDER_NOTIONAL": 100
+    },
+    "ETH": {
+        "STRATEGY": "twap",
+        "HEDGE_EXCHANGE": "ftx",
+        "TOTAL_NOTIONAL": 200,
+        "PERP_DIRECTION": "short",
+        "PARTS": 4,
+        "PERIOD": "20m",
+        "POLL_INTERVAL": 5000,
+        "CLOSE_ONLY": true
+    }
+}
