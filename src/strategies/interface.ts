@@ -1,5 +1,5 @@
-import { Market } from '../connectors/common';
-import { Exchange, HttpClient } from '../connectors/interface';
+import { Exchange, Market } from '../connectors/common';
+import { HttpClient } from '../connectors/interface';
 import { PerpV2Client } from '../connectors/perpetual_protocol_v2';
 
 export type FundingRateEngineParameters = {

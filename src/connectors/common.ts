@@ -1,5 +1,9 @@
 import { Direction } from '../strategies/interface';
-import { Exchange } from './interface';
+
+export enum Exchange {
+    Ftx = 'ftx',
+    PerpetualProtocolV2 = 'perpetual_protocol_v2'
+}
 
 export enum MarketType {
     Future = 'future',

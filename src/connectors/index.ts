@@ -1,7 +1,7 @@
-import { Market, MarketType } from './common';
+import { Exchange, Market, MarketType } from './common';
 import { FtxClient } from './ftx';
 import FtxHelpers from './ftx/helpers';
-import { Exchange, HttpClient } from './interface';
+import { HttpClient } from './interface';
 import { PerpV2Client } from './perpetual_protocol_v2';
 import PerpV2Helpers from './perpetual_protocol_v2/helpers';
 

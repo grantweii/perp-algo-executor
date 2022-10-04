@@ -1,6 +1,5 @@
 import { FtxParameters } from '.';
-import { Market, MarketType } from '../common';
-import { Exchange } from '../interface';
+import { Exchange, Market, MarketType } from '../common';
 
 export default class FtxHelpers {
     static getParameters(): FtxParameters {

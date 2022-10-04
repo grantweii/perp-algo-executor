@@ -1,5 +1,4 @@
 import { getHttpClient, getMarket, getPerpV2Client } from './connectors';
-import { Exchange } from './connectors/interface';
 import PerpV2Helpers from './connectors/perpetual_protocol_v2/helpers';
 import {
     Direction,
@@ -9,6 +8,7 @@ import {
 } from './strategies/interface';
 import FundingRateArbEngine from './strategies/funding_rate';
 import Config from './config.json';
+import { Exchange } from './connectors/common';
 require('dotenv').config();
 
 const getFundingConfigs = () => {

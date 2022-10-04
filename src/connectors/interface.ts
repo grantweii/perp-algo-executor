@@ -1,11 +1,6 @@
 import { Market, MarketResponse, Order, PlaceOrder, Position, Quote, QuoteParams } from './common';
 import { Method } from 'axios';
 
-export enum Exchange {
-    Ftx = 'ftx',
-    PerpetualProtocolV2 = 'perpetual_protocol_v2'
-}
-
 export interface Request {
     METHOD: Method; // Upper case only! eg. GET, POST
     PATH: string;
