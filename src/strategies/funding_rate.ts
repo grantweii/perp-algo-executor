@@ -109,7 +109,7 @@ export default class FundingRateArbEngine {
      * Sizes should be within the acceptable difference.
      * @param perpPosition
      * @param hedgePosition
-     * @param acceptableDifference in bps
+     * @param acceptableDifference
      */
     validatePositions(
         perpPosition: PerpPosition | null,

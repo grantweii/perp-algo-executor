@@ -1,6 +1,5 @@
 import { PerpV2Parameters } from '.';
-import { Market, MarketType } from '../common';
-import { Exchange } from '../interface';
+import { Exchange, Market, MarketType } from '../common';
 
 export default class PerpV2Helpers {
     static getParameters(): PerpV2Parameters {
