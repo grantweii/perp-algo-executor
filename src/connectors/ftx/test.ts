@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import FtxHelpers from './helpers';
-import { Market, MarketType, OrderType, Side } from '../common';
-import { Exchange, HttpClient } from '../interface';
+import { Exchange, Market, MarketType, OrderType, Side } from '../common';
+import { HttpClient } from '../interface';
 import { getHttpClient } from '..';
 import { describe } from 'mocha';
 require('dotenv').config();
