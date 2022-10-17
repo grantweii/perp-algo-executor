@@ -2,6 +2,7 @@ import { Position as PerpPosition, PositionSide } from '@perp/sdk-curie';
 import { Market, OrderType, Position, Side } from '../connectors/common';
 import { HttpClient } from '../connectors/interface';
 import { PerpV2Client } from '../connectors/perpetual_protocol_v2';
+import { bpsToNatural } from '../utils/math';
 import { Spread } from './execution/spread';
 import { Twap } from './execution/twap';
 import {
@@ -55,6 +56,7 @@ export default class FundingRateArbEngine {
         if (params.closeOnly) this.closeOnly = true;
         if (params.pollInterval) this.INTERVAL = params.pollInterval;
         if (params.slippage) this.slippage = params.slippage;
+        if (params.acceptableDifference) this.acceptableDifference = bpsToNatural(params.acceptableDifference) * params.totalNotional;
         let execution: FundingExecution;
         if (params.executionParams.strategy === ExecutionType.Spread) {
             execution = new Spread({
@@ -194,7 +196,7 @@ export default class FundingRateArbEngine {
             }
 
             // Case 5: correct directions but unbalanced
-            const perpNotional = perpPosition.entryPrice.mul(perpPosition.sizeAbs).toNumber();
+            const perpNotional = perpPosition.sizeAbs.mul(hedgePosition.entryPrice).toNumber();
             const hedgeNotional = hedgePosition.entryPrice * hedgePosition.size;
             const notionalDiff = Math.abs(perpNotional - hedgeNotional);
             if (notionalDiff > this.acceptableDifference) {
@@ -221,21 +223,58 @@ export default class FundingRateArbEngine {
     private async pollOpening(perpPosition: PerpPosition | null, hedgePosition: Position | null) {
         // 1. check if position is complete
         if (perpPosition && hedgePosition) {
-            const perpEntryNotional = perpPosition.entryPrice.mul(perpPosition.sizeAbs).toNumber();
+            const perpEntryNotional = perpPosition.sizeAbs.mul(hedgePosition.entryPrice).toNumber();
             const hedgeEntryNotional = hedgePosition.entryPrice * hedgePosition.size;
+            const perpNotionalDiff = perpEntryNotional - this.totalNotional;
+            const hedgeNotionalDiff = hedgeEntryNotional - this.totalNotional;
             // difference of $X notional is acceptable to finish on
-            if (
-                (perpEntryNotional > this.totalNotional &&
-                    hedgeEntryNotional > this.totalNotional) ||
-                (Math.abs(perpEntryNotional - this.totalNotional) < this.acceptableDifference &&
-                    Math.abs(hedgeEntryNotional - this.totalNotional) < this.acceptableDifference)
-            ) {
+            if (Math.abs(perpNotionalDiff) < this.acceptableDifference &&
+                    Math.abs(hedgeNotionalDiff) < this.acceptableDifference) {
                 console.log(
                     `${this.perpMarket.baseToken} - ${this.state} funding rate arb complete. Perp notional: ${perpEntryNotional}. Hedge notional: ${hedgeEntryNotional}`
                 );
                 clearInterval(this.runnerInterval);
                 return;
             }
+            let skipIteration = false;
+            // downsize to total notional if we have opened too much
+            if (perpNotionalDiff > this.acceptableDifference) {
+                // use hedge price to calculate approximate size as it will be more stable
+                const hedgePrice = await this.hedgeClient.quote({
+                    market: this.hedgeMarket,
+                    orderNotional: perpNotionalDiff,
+                    direction: this.hedgeDirection, // we are downsizing so use the opposite direction
+                })
+                const sizeToDownsize = perpNotionalDiff / hedgePrice.averagePrice;
+                await this.perpClient.placeOrder({
+                    market: this.perpMarket,
+                    slippage: this.slippage,
+                    direction: this.hedgeDirection,  // we are downsizing so use the opposite direction
+                    size: sizeToDownsize,
+                });
+                skipIteration = true;
+            }
+            if (hedgeNotionalDiff > this.acceptableDifference) {
+                // use hedge price to calculate approximate size as it will be more stable
+                const hedgePrice = await this.hedgeClient.quote({
+                    market: this.hedgeMarket,
+                    orderNotional: hedgeNotionalDiff,
+                    direction: this.perpDirection, // we are downsizing so use the opposite direction
+                });
+                const sizeToDownsize = hedgeNotionalDiff / hedgePrice.averagePrice;
+                await this.hedgeClient.placeOrder({
+                    market: this.hedgeMarket.internalName,
+                    side: this.hedgeDirection === Direction.Long ? Side.Sell : Side.Buy, // we are downsizing so use the opposite direction
+                    price: null,
+                    type: OrderType.Market,
+                    size: sizeToDownsize,
+                    reduceOnly: true,
+                    ioc: true,
+                    postOnly: false,
+                });
+                skipIteration = true;
+            }
+            if (skipIteration) return;
         }
 
         // 2. validate position

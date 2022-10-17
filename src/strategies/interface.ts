@@ -13,6 +13,7 @@ export type FundingRateEngineParameters = {
     closeOnly?: boolean;
     pollInterval?: number; // milliseconds
     slippage?: number; // in bps
+    acceptableDifference?: number; // in bps
 };
 
 export type FundingRateConfig = {
@@ -27,6 +28,7 @@ export type FundingRateConfig = {
     PERIOD?: string;
     POLL_INTERVAL?: number; // milliseconds
     SLIPPAGE?: number; // in bps
+    ACCEPTABLE_DIFFERENCE?: number; // in bps
 };
 
 export enum State {
