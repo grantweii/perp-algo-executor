@@ -30,7 +30,9 @@ Edit the trading parameters in `src/config.json`:
         "TOTAL_NOTIONAL": 200,
         "PERP_DIRECTION": "short",
         "PARTS": 2,
+        // eg. "5m" (minutes), "2h" (hours), "1d" (days)
         "PERIOD": "5m",
+        // optional, default false
         "CLOSE_ONLY": true,
         // optional (ms), default 2000
         "POLL_INTERVAL": 5000,
