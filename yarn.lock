@@ -215,10 +215,10 @@
   dependencies:
     "@ethersproject/logger" "^5.7.0"
 
-"@ethersproject/providers@5.7.1":
-  version "5.7.1"
-  resolved "https://registry.yarnpkg.com/@ethersproject/providers/-/providers-5.7.1.tgz#b0799b616d5579cd1067a8ebf1fc1ec74c1e122c"
-  integrity sha512-vZveG/DLyo+wk4Ga1yx6jSEHrLPgmTt+dFv0dv8URpVCRf0jVhalps1jq/emN/oXnMRsC7cQgAF32DcXLL7BPQ==
+"@ethersproject/providers@5.7.2":
+  version "5.7.2"
+  resolved "https://registry.yarnpkg.com/@ethersproject/providers/-/providers-5.7.2.tgz#f8b1a4f275d7ce58cf0a2eec222269a08beb18cb"
+  integrity sha512-g34EWZ1WWAVgr4aptGlVBF8mhl3VWjv+8hoAnzStu8Ah22VHBsuGzP17eb6xDVRzw895G4W7vvx60lFFur/1Rg==
   dependencies:
     "@ethersproject/abstract-provider" "^5.7.0"
     "@ethersproject/abstract-signer" "^5.7.0"
@@ -429,22 +429,22 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@perp/curie-deployments@2022.8.25-1661400314113":
-  version "2022.8.25-1661400314113"
-  resolved "https://registry.yarnpkg.com/@perp/curie-deployments/-/curie-deployments-2022.8.25-1661400314113.tgz#30a43e82be5913daae88649efbc0e1f27cde1c57"
-  integrity sha512-0tJGRk988swB1OC8SAPiWmIpyqqstH5bHLdBwQ0YZYrGahU3zuZ81T+x8X6a+H4HXfFtKd1LkaB59BrejJQTag==
+"@perp/curie-deployments@2022.10.5-1664940982527":
+  version "2022.10.5-1664940982527"
+  resolved "https://registry.yarnpkg.com/@perp/curie-deployments/-/curie-deployments-2022.10.5-1664940982527.tgz#ce191ad969b9e88a939fcae8409968d41665b0c2"
+  integrity sha512-07fv7vu8okF/9GevvOKoeUhOJqQNPAvOSdLj1DBffPtuq/dnUfP5Ck/CJopIm+FjRJVer8VX3Nx7IdQEo/nhBw==
 
-"@perp/curie-deployments@^2022.9.14-1663132757153":
-  version "2022.9.14-1663132757153"
-  resolved "https://registry.yarnpkg.com/@perp/curie-deployments/-/curie-deployments-2022.9.14-1663132757153.tgz#e782d7a5d6dd2c578eadefc96afed1ddbcf436b3"
-  integrity sha512-1geyd0ccQulwnPzHGXLau+0bYYFjhV6wApQ6EBpjkD5G6l8RJE0du1Dqg8MwunG9q+uHCSvXWu75TMxSr6X9+Q==
+"@perp/curie-deployments@^2022.10.20-1666239114830":
+  version "2022.10.20-1666239114830"
+  resolved "https://registry.yarnpkg.com/@perp/curie-deployments/-/curie-deployments-2022.10.20-1666239114830.tgz#5fa8c9c3a25225b9ad28610b2cc028bc4646d535"
+  integrity sha512-/uLvW3pwRvo/MJlhyCBx6/Clk7VZaYQe44WdGXYaae5V5H6buU1Ts1fOQUpJ3oEXnbIBD8dK/6nSMWCErYVGbA==
 
-"@perp/sdk-curie@^1.12.3":
-  version "1.12.3"
-  resolved "https://registry.yarnpkg.com/@perp/sdk-curie/-/sdk-curie-1.12.3.tgz#a18815a1e3b2e16a9061bde650af254aedcd5f56"
-  integrity sha512-d9rxyT/ToeQw2f+KBGBwKX8xw87ofMRXJTS9SqNt5MHLLd5ccDaHQAzLsOKJihPCyZvUFwS3w+8hvv+JnjuiJg==
+"@perp/sdk-curie@^1.14.0":
+  version "1.14.0"
+  resolved "https://registry.yarnpkg.com/@perp/sdk-curie/-/sdk-curie-1.14.0.tgz#86d420690dd72bf913edb76bad77251f18dd4b8e"
+  integrity sha512-eSHFLtIeA9rS8xLYAb60CW/NVYT/d4UW20R4UU9RQ30YToNA65PEkuWvcc2L5x+8S7YW6G0miniNmQvawpRvLA==
   dependencies:
-    "@perp/curie-deployments" "2022.8.25-1661400314113"
+    "@perp/curie-deployments" "2022.10.5-1664940982527"
     cross-fetch "3.1.5"
 
 "@tsconfig/node10@^1.0.7":
@@ -1241,10 +1241,10 @@ esutils@^2.0.2:
   resolved "https://registry.yarnpkg.com/esutils/-/esutils-2.0.3.tgz#74d2eb4de0b8da1293711910d50775b9b710ef64"
   integrity sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==
 
-ethers@^5.7.1:
-  version "5.7.1"
-  resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.7.1.tgz#48c83a44900b5f006eb2f65d3ba6277047fd4f33"
-  integrity sha512-5krze4dRLITX7FpU8J4WscXqADiKmyeNlylmmDLbS95DaZpBhDe2YSwRQwKXWNyXcox7a3gBgm/MkGXV1O1S/Q==
+ethers@^5.7.2:
+  version "5.7.2"
+  resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.7.2.tgz#3a7deeabbb8c030d4126b24f84e525466145872e"
+  integrity sha512-wswUsmWo1aOK8rR7DIKiWSw9DbLWe6x98Jrn8wcTflTVvaXhAMaB5zGAXy0GYQEQp9iO1iSHWVyARQm11zUtyg==
   dependencies:
     "@ethersproject/abi" "5.7.0"
     "@ethersproject/abstract-provider" "5.7.0"
@@ -1264,7 +1264,7 @@ ethers@^5.7.1:
     "@ethersproject/networks" "5.7.1"
     "@ethersproject/pbkdf2" "5.7.0"
     "@ethersproject/properties" "5.7.0"
-    "@ethersproject/providers" "5.7.1"
+    "@ethersproject/providers" "5.7.2"
     "@ethersproject/random" "5.7.0"
     "@ethersproject/rlp" "5.7.0"
     "@ethersproject/sha2" "5.7.0"

@@ -1,7 +1,8 @@
 import { Position as PerpPosition, PositionSide } from '@perp/sdk-curie';
+import EventEmitter from 'events';
 import { Market, OrderType, Position, Side } from '../connectors/common';
 import { HttpClient } from '../connectors/interface';
-import { PerpV2Client } from '../connectors/perpetual_protocol_v2';
+import { PerpV2Client, PositionChangedEvent } from '../connectors/perpetual_protocol_v2';
 import { bpsToNatural } from '../utils/math';
 import { Spread } from './execution/spread';
 import { Twap } from './execution/twap';
@@ -20,6 +21,10 @@ export default class FundingRateArbEngine {
      * Poll interval.
      */
     private readonly INTERVAL: number = 2000;
+    /**
+     * Timeout interval.
+     */
+    private readonly TIMEOUT_INTERVAL: number = 30000;
     /**
      * Max slippage on perp.
      */
@@ -42,6 +47,8 @@ export default class FundingRateArbEngine {
     private state: State = State.OPENING;
     private running: boolean = false;
     private runnerInterval?: NodeJS.Timer;
+    private pendingOrder: boolean = false;
+    private eventEmitter: EventEmitter;
 
     constructor(params: FundingRateEngineParameters) {
         this.hedgeClient = params.hedgeClient;
@@ -56,7 +63,9 @@ export default class FundingRateArbEngine {
         if (params.closeOnly) this.closeOnly = true;
         if (params.pollInterval) this.INTERVAL = params.pollInterval;
         if (params.slippage) this.slippage = params.slippage;
-        if (params.acceptableDifference) this.acceptableDifference = bpsToNatural(params.acceptableDifference) * params.totalNotional;
+        if (params.acceptableDifference)
+            this.acceptableDifference =
+                bpsToNatural(params.acceptableDifference) * params.totalNotional;
         let execution: FundingExecution;
         if (params.executionParams.strategy === ExecutionType.Spread) {
             execution = new Spread({
@@ -78,6 +87,8 @@ export default class FundingRateArbEngine {
             });
         }
         this.execution = execution;
+        this.onPositionChangedEvent = this.onPositionChangedEvent.bind(this);
+        this.eventEmitter = new EventEmitter();
     }
 
     /**
@@ -85,25 +96,122 @@ export default class FundingRateArbEngine {
      * Create polling interval.
      */
     async init() {
+        await this.perpClient.subscribePositionChangedEvent(this.onPositionChangedEvent);
         const perpPosition = await this.perpClient.getPosition(this.perpMarket);
         const hedgePosition = await this.hedgeClient.getPosition(this.hedgeMarket);
+
+        // 1. Validate positions
         const validity = this.validatePositions(perpPosition, hedgePosition);
         if (validity.positionState !== PositionState.VALID) {
             throw new Error(
                 `Position state ${validity.positionState}. Reason: ${validity.message}`
             );
         }
+
+        // 2. Initialize state
         if (this.closeOnly) {
             this.state = State.CLOSING;
-        } else if (
-            perpPosition &&
-            Math.abs(perpPosition.openNotionalOriginal.toNumber() - this.totalNotional) >
+            // TODO: call updateOrderNotional if we decide to account for existing position
+        } else if (perpPosition) {
+            if (
+                Math.abs(perpPosition.openNotionalOriginal.toNumber()) - this.totalNotional >
                 this.acceptableDifference
-        ) {
-            this.state = State.OPENING;
+            ) {
+                throw new Error(`Open notional is more than requested total notional`);
+            } else {
+                this.state = State.OPENING;
+                // // Account for existing position (if any) in TWAP order notional value
+                // if (perpPosition && !perpPosition.openNotionalAbs.eq(0) && this.execution instanceof Twap) {
+                //     const updatedOrderNotional = this.execution.updateOrderNotional(perpPosition.openNotionalAbs.toNumber());
+                //     console.log(`${this.perpMarket.baseToken} - TWAP. Updated order notional to ${updatedOrderNotional}`);
+                // }
+            }
         }
+
         this.runnerInterval = setInterval(() => this.run(), this.INTERVAL);
         console.log(`${this.perpMarket.baseToken} - Funding rate arb successfully initialized`);
+    }
+
+    /**
+     * Handler called when a perp PositionChanged event is received.
+     * Checks if event matches user's wallet and subscribed token and places corresponding hedge order.
+     * @param params
+     */
+    async onPositionChangedEvent(params: PositionChangedEvent) {
+        if (
+            params.trader === this.perpClient.wallet.address &&
+            params.baseToken === this.perpClient.baseTokenAddress(this.perpMarket)
+        ) {
+            this.eventEmitter.emit('perp_fill', params);
+        }
+    }
+
+    /**
+     * Creates one-off event listener for fill.
+     * On fill receipt, either places hedge order or noop.
+     * If no fill is received after TIMEOUT_INTERVAL ms, one-off event listener is destroyed and returns to regular flow.
+     * @param state
+     */
+    onPerpFill(placeHedge: boolean) {
+        // create timeout
+        const timeout = setTimeout(() => this.handleTimeout(), this.TIMEOUT_INTERVAL);
+        this.eventEmitter.once('perp_fill', async (args: PositionChangedEvent) => {
+            // clear timeout before placing order to avoid race condition
+            clearTimeout(timeout);
+
+            if (placeHedge) {
+                // -exchangedPositionNotional is LONG, +exchangedPositionNotional is SHORT
+                const hedgeDirection =
+                    args.exchangedPositionNotional < 0 ? Direction.Short : Direction.Long;
+                console.log(
+                    `${this.perpMarket.baseToken} - Received perp fill. Executing hedge order. ${hedgeDirection} ${args.exchangedPositionSize}...`
+                );
+                await this.hedgeClient.placeOrder({
+                    market: this.hedgeMarket.internalName,
+                    side: hedgeDirection === Direction.Long ? Side.Buy : Side.Sell,
+                    price: null,
+                    type: OrderType.Market,
+                    size: Math.abs(args.exchangedPositionSize),
+                    reduceOnly: this.state === State.CLOSING ? true : false,
+                    ioc: true,
+                    postOnly: false,
+                });
+            } else {
+                console.log(`${this.perpMarket.baseToken} - Received perp fill. Noop...`);
+            }
+
+            this.pendingOrder = false;
+        });
+    }
+
+    /**
+     * On timeout, destroys one-off event listener and returns to regular flow.
+     */
+    handleTimeout() {
+        if (this.pendingOrder) {
+            console.log(
+                `${this.perpMarket.baseToken} - Pending order timed out after ${
+                    this.TIMEOUT_INTERVAL / 1000
+                } secs...`
+            );
+            this.pendingOrder = false;
+        }
+    }
+
+    async placePerpOrder(orderSize: number, direction: Direction, placeHedge: boolean) {
+        try {
+            this.onPerpFill(placeHedge);
+            this.pendingOrder = true;
+            await this.perpClient.placeOrder({
+                market: this.perpMarket,
+                slippage: this.slippage,
+                direction,
+                size: orderSize,
+            });
+        } catch (err) {
+            this.pendingOrder = false;
+            throw err;
+        }
     }
 
     /**
@@ -223,19 +331,22 @@ export default class FundingRateArbEngine {
     private async pollOpening(perpPosition: PerpPosition | null, hedgePosition: Position | null) {
         // 1. check if position is complete
         if (perpPosition && hedgePosition) {
-            const perpEntryNotional = perpPosition.sizeAbs.mul(hedgePosition.entryPrice).toNumber();
+            const perpEntryNotional = Math.abs(perpPosition.openNotionalOriginal.toNumber());
             const hedgeEntryNotional = hedgePosition.entryPrice * hedgePosition.size;
             const perpNotionalDiff = perpEntryNotional - this.totalNotional;
             const hedgeNotionalDiff = hedgeEntryNotional - this.totalNotional;
             // difference of $X notional is acceptable to finish on
-            if (Math.abs(perpNotionalDiff) < this.acceptableDifference &&
-                    Math.abs(hedgeNotionalDiff) < this.acceptableDifference) {
+            if (
+                Math.abs(perpNotionalDiff) < this.acceptableDifference &&
+                Math.abs(hedgeNotionalDiff) < this.acceptableDifference
+            ) {
                 console.log(
                     `${this.perpMarket.baseToken} - ${this.state} funding rate arb complete. Perp notional: ${perpEntryNotional}. Hedge notional: ${hedgeEntryNotional}`
                 );
                 clearInterval(this.runnerInterval);
                 return;
             }
+
             let skipIteration = false;
             // downsize to total notional if we have opened too much
             if (perpNotionalDiff > this.acceptableDifference) {
@@ -244,14 +355,9 @@ export default class FundingRateArbEngine {
                     market: this.hedgeMarket,
                     orderNotional: perpNotionalDiff,
                     direction: this.hedgeDirection, // we are downsizing so use the opposite direction
-                })
-                const sizeToDownsize = perpNotionalDiff / hedgePrice.averagePrice;
-                await this.perpClient.placeOrder({
-                    market: this.perpMarket,
-                    slippage: this.slippage,
-                    direction: this.hedgeDirection,  // we are downsizing so use the opposite direction
-                    size: sizeToDownsize,
                 });
+                const sizeToDownsize = perpNotionalDiff / hedgePrice.averagePrice;
+                await this.placePerpOrder(sizeToDownsize, this.hedgeDirection, false); // we are downsizing so use the opposite direction
                 skipIteration = true;
             }
             if (hedgeNotionalDiff > this.acceptableDifference) {
@@ -307,12 +413,7 @@ export default class FundingRateArbEngine {
                 console.log(
                     `${this.perpMarket.baseToken} - Upsizing perp: ${this.perpDirection} ${absSizeDiff}`
                 );
-                await this.perpClient.placeOrder({
-                    market: this.perpMarket,
-                    slippage: this.slippage,
-                    direction: this.perpDirection,
-                    size: absSizeDiff,
-                });
+                await this.placePerpOrder(absSizeDiff, this.perpDirection, false);
             }
         } else if (validity.positionState === PositionState.WRONG_DIRECTION) {
             // notify user and kill polling interval
@@ -331,36 +432,16 @@ export default class FundingRateArbEngine {
             if (!canExecuteResponse) return;
 
             let orderSize = canExecuteResponse.orderSize;
-            const perpEntryNotional =
-                perpPosition?.entryPrice.mul(perpPosition.sizeAbs).toNumber() || 0;
+            const perpEntryNotional = Math.abs(perpPosition?.openNotionalOriginal.toNumber() || 0);
             // recalc order size if remaining notional is less than order notional
             if (this.totalNotional - perpEntryNotional < this.execution.orderNotional) {
                 orderSize = (this.totalNotional - perpEntryNotional) / canExecuteResponse.price;
             }
 
             console.log(
-                `${this.perpMarket.baseToken} - Executing perp order. ${this.perpDirection} ${canExecuteResponse.orderSize}...`
+                `${this.perpMarket.baseToken} - Executing perp order. ${this.perpDirection} ${orderSize}...`
             );
-            // always execute perp first
-            await this.perpClient.placeOrder({
-                market: this.perpMarket,
-                slippage: this.slippage,
-                direction: this.perpDirection,
-                size: orderSize,
-            });
-            console.log(
-                `${this.perpMarket.baseToken} - Executing hedge order. ${this.hedgeDirection} ${canExecuteResponse.orderSize}...`
-            );
-            await this.hedgeClient.placeOrder({
-                market: this.hedgeMarket.internalName,
-                side: this.hedgeDirection === Direction.Long ? Side.Buy : Side.Sell,
-                price: null,
-                type: OrderType.Market,
-                size: canExecuteResponse.orderSize,
-                reduceOnly: false,
-                ioc: true,
-                postOnly: false,
-            });
+            await this.placePerpOrder(orderSize, this.perpDirection, true);
         }
     }
 
@@ -393,12 +474,7 @@ export default class FundingRateArbEngine {
                 console.log(
                     `${this.perpMarket.baseToken} - Downsizing perp. ${this.perpDirection} ${absSizeDiff}`
                 );
-                await this.perpClient.placeOrder({
-                    market: this.perpMarket,
-                    slippage: this.slippage,
-                    direction: this.perpDirection,
-                    size: absSizeDiff,
-                });
+                await this.placePerpOrder(absSizeDiff, this.perpDirection, false);
             } else {
                 // downsize hedge with market order
                 console.log(
@@ -442,31 +518,12 @@ export default class FundingRateArbEngine {
             console.log(
                 `${this.perpMarket.baseToken} - Executing perp order. ${this.perpDirection} ${canExecuteResponse.orderSize}...`
             );
-            // always execute perp first
-            await this.perpClient.placeOrder({
-                market: this.perpMarket,
-                slippage: this.slippage,
-                direction: this.perpDirection,
-                size: canExecuteResponse.orderSize,
-            });
-            console.log(
-                `${this.perpMarket.baseToken} - Executing hedge order. ${this.hedgeDirection} ${canExecuteResponse.orderSize}...`
-            );
-            await this.hedgeClient.placeOrder({
-                market: this.hedgeMarket.internalName,
-                side: this.hedgeDirection === Direction.Long ? Side.Buy : Side.Sell,
-                price: null,
-                type: OrderType.Market,
-                size: canExecuteResponse.orderSize,
-                reduceOnly: false,
-                ioc: true,
-                postOnly: false,
-            });
+            await this.placePerpOrder(canExecuteResponse.orderSize, this.perpDirection, true);
         }
     }
 
     private async run() {
-        if (this.running) return;
+        if (this.running || this.pendingOrder) return;
         this.running = true;
 
         try {

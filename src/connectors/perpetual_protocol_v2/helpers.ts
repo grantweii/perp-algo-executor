@@ -8,7 +8,8 @@ export default class PerpV2Helpers {
         }
         return {
             privateKey: process.env.PRIVATE_KEY,
-            rpcUrl: process.env.RPC_URL,
+            httpRpcUrl: process.env.HTTP_RPC_URL,
+            wsRpcUrl: process.env.WS_RPC_URL,
         };
     }
 

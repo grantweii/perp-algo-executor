@@ -18,6 +18,15 @@ export type FtxPosition = {
     openSize: number;
     collateralUsed: number;
     estimatedLiquidationPrice: number;
+    recentAverageOpenPrice: number;
+    recentPnl: number;
+    recentBreakEvenPrice: number;
+    cumulativeBuySize: number;
+    cumulativeSellSize: number;
+};
+
+type GetPositionRequest = {
+    showAvgPrice: boolean;
 };
 
 export class GetPosition implements Request {
@@ -25,14 +34,18 @@ export class GetPosition implements Request {
     PATH: string = '/positions';
     AUTH: boolean = true;
 
-    getParams = () => null;
+    getParams = (): GetPositionRequest => {
+        return {
+            showAvgPrice: true,
+        };
+    };
 
     static deserialize(response: FtxPosition): Position {
         return {
             market: response.future,
             size: response.size,
             side: response.side,
-            entryPrice: response.entryPrice,
+            entryPrice: response.recentAverageOpenPrice,
             unrealizedPnl: response.unrealizedPnl,
             liquidationPrice: response.estimatedLiquidationPrice,
         };

@@ -77,13 +77,11 @@ export type InvalidPosition = {
 
 export type PositionValidity = ValidPosition | InvalidPosition;
 
-// TODO: rename
 export type ExecutionRequest = {
     orderSize: number; // size not notional, must be abs
     price: number;
 };
 
-// TODO: rename
 export type CanExecuteResponse = false | ExecutionRequest;
 
 export type CheckTwapParameters = {

@@ -8,7 +8,7 @@ import {
 } from './strategies/interface';
 import FundingRateArbEngine from './strategies/funding_rate';
 import Config from './config.json';
-import { Exchange } from './connectors/common';
+import { Exchange, Market } from './connectors/common';
 require('dotenv').config();
 
 const getFundingConfigs = () => {
@@ -64,6 +64,7 @@ const getFundingConfigs = () => {
             closeOnly: config.CLOSE_ONLY,
             pollInterval: config.POLL_INTERVAL,
             slippage: config.SLIPPAGE,
+            acceptableDifference: config.ACCEPTABLE_DIFFERENCE,
         });
     }
     return fundingConfigs;
@@ -71,10 +72,12 @@ const getFundingConfigs = () => {
 
 async function main() {
     const fundingConfigs = getFundingConfigs();
+    const perpMarkets: Market[] = fundingConfigs.map((config) => PerpV2Helpers.getMarket(config.baseToken));
+    const perpClient = await getPerpV2Client(perpMarkets);
+
     for (const config of fundingConfigs) {
         const perpMarket = PerpV2Helpers.getMarket(config.baseToken);
         const hedgeMarket = getMarket(config.hedgeExchange, config.baseToken);
-        const perpClient = await getPerpV2Client([perpMarket]);
         const hedgeClient = await getHttpClient(config.hedgeExchange, [hedgeMarket]);
         const fundingRateArbEngine = new FundingRateArbEngine({
             hedgeClient,
@@ -87,6 +90,7 @@ async function main() {
             closeOnly: config.closeOnly,
             pollInterval: config.pollInterval,
             slippage: config.slippage,
+            acceptableDifference: config.acceptableDifference,
         });
         await fundingRateArbEngine.init();
     }

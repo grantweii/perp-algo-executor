@@ -10,7 +10,6 @@ import {
 function determinePeriodInMs(period: string): number {
     if (period.endsWith('d')) {
         const substring = period.split('d');
-        // TODO: attempt to parse as number, fail if not
         const numeric = Number(substring[0]);
         if (isNaN(numeric)) throw new Error(`'${substring[0]}' is not a number`);
         return numeric * 86400000;
@@ -44,7 +43,9 @@ export class Twap implements FundingExecution {
     private readonly period: number; // in ms
     private readonly perpMarket: Market;
     private readonly perpDirection: Direction;
-    readonly orderNotional: number;
+    private readonly totalNotional: number;
+    private readonly parts: number;
+    orderNotional: number;
     private last: number | null = null; // in ms
 
     constructor(params: TwapExecutionParameters) {
@@ -53,6 +54,8 @@ export class Twap implements FundingExecution {
         this.perpClient = params.perpClient;
         this.perpMarket = params.perpMarket;
         this.perpDirection = params.perpDirection;
+        this.totalNotional = params.totalNotional;
+        this.parts = params.twap.parts;
     }
 
     async canExecute(): Promise<CanExecuteResponse> {
@@ -74,5 +77,11 @@ export class Twap implements FundingExecution {
         const remainingSecs = remainingInMs / 1000 % 60;
         console.log(`${this.perpMarket.baseToken} - TWAP - Remaining: ${remainingMins}m ${remainingSecs}s`);
         return false;
+    }
+
+    // TODO: remove if not needed
+    updateOrderNotional(existingNotional: number): number {
+        this.orderNotional = (this.totalNotional - existingNotional) / this.parts;
+        return this.orderNotional;
     }
 }
