@@ -32,8 +32,18 @@ Edit the trading parameters in `src/config.json`:
         "PARTS": 2,
         "PERIOD": "5m",
         "CLOSE_ONLY": true,
-        "POLL_INTERVAL": 5000, // optional
-        "SLIPPAGE": 100 // optional
+        // optional (ms), default 2000
+        "POLL_INTERVAL": 5000,
+         // optional (bps), default 100
+        "SLIPPAGE": 100,
+        /**
+         * Buffer that is acceptable in calculations.
+         * eg. 50 on a total notional of $1000 means $5 buffer is acceptable.
+         *  - used in determining strategy completion ie. notional between $995 and $1005 will be considered complete when OPENING
+         *  - used in determining position validity ie. $5 difference between hedge notional and perp notional is still considered valid
+         * optional (bps)
+         */
+        "ACCEPTABLE_DIFFERENCE": 50
     }
 }
 ```
