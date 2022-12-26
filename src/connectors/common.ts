@@ -1,8 +1,10 @@
 import { Direction } from '../strategies/interface';
+import { Dayjs } from 'dayjs';
 
 export enum Exchange {
     Ftx = 'ftx',
-    PerpetualProtocolV2 = 'perpetual_protocol_v2'
+    PerpetualProtocolV2 = 'perpetual_protocol_v2',
+    Binance = 'binance',
 }
 
 export enum MarketType {
@@ -20,34 +22,45 @@ export enum OrderType {
     Limit = 'limit',
 }
 
+export enum TimeInForce {
+    GTC = 'gtc',
+    IOC = 'ioc',
+    FOK = 'fok',
+}
+
+export enum OrderStatus {
+    New = 'new',
+    Open = 'open',
+    Closed = 'closed',
+}
+
 export type Order = {
-    createdAt: string;
+    updateTime: Dayjs;
     filledSize: number;
-    future: string;
     id: number;
     market: string;
-    price: number;
+    price: number | null;
     remainingSize: number;
-    side: string;
+    side: Side;
     size: number;
-    status: string;
-    type: string;
+    status: OrderStatus;
+    type: OrderType;
     reduceOnly: boolean;
-    ioc: boolean;
+    timeInForce: TimeInForce;
     postOnly: boolean;
-    clientId: string;
+    clientOrderId: string;
 };
 
 export type PlaceOrder = {
     market: string;
     side: Side;
-    price: number | null;
+    price?: number | null;
     type: OrderType;
     size: number;
     reduceOnly: boolean;
-    ioc: boolean;
+    timeInForce?: TimeInForce;
     postOnly: boolean;
-    clientId?: string;
+    clientOrderId?: string;
 };
 
 // Mapped return response to GetMarkets
@@ -65,6 +78,8 @@ export type MarketInfo = {
     tickSize: number;
     minSize: number;
     sizeIncrement: number;
+    lastBid: number; // last queried top bid price
+    lastAsk: number; // last queried top ask price
 };
 
 // Internal market type
@@ -72,7 +87,7 @@ export type Market = {
     baseToken: string;
     quoteToken: string; // can be changed for our system's purposes so may not be market's actual quote token
     type: MarketType;
-    internalName: string; // exchange's actual market identifier
+    externalName: string; // exchange's actual market identifier
     exchange: Exchange;
 };
 

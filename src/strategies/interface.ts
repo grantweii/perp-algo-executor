@@ -19,6 +19,7 @@ export type FundingRateEngineParameters = {
 export type FundingRateConfig = {
     STRATEGY: ExecutionType;
     HEDGE_EXCHANGE: Exchange;
+    HEDGE_QUOTE_TOKEN: string;
     TOTAL_NOTIONAL: number;
     PERP_DIRECTION: Direction;
     CLOSE_ONLY?: boolean;
@@ -94,4 +95,5 @@ export type CheckTwapParameters = {
 export interface FundingExecution {
     orderNotional: number;
     canExecute(): Promise<CanExecuteResponse>;
+    onSuccess(): void;
 }

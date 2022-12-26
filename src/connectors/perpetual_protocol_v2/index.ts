@@ -73,7 +73,7 @@ export class PerpV2Client {
         if (!this.client.clearingHouse)
             throw new Error('Perp client Clearinghouse has not been instantiated');
         const positionDraft = this.client.clearingHouse.createPositionDraft({
-            tickerSymbol: params.market.internalName,
+            tickerSymbol: params.market.externalName,
             side: params.direction === Direction.Long ? PositionSide.LONG : PositionSide.SHORT,
             amountInput: new Big(params.size),
             isAmountInputBase: true,
@@ -92,10 +92,10 @@ export class PerpV2Client {
         if (!this.client.clearingHouse)
             throw new Error('Perp client Clearinghouse has not been instantiated');
         const position = await this.client.positions.getTakerPositionByTickerSymbol(
-            market.internalName
+            market.externalName
         );
         if (!position)
-            throw new Error(`Perp position does not exist for market ${market.internalName}`);
+            throw new Error(`Perp position does not exist for market ${market.externalName}`);
         const tx = await this.client.clearingHouse.closePosition(position, new Big(slippage || 0));
         return tx.transaction.wait(2);
     }
@@ -104,7 +104,7 @@ export class PerpV2Client {
         if (!this.client.positions)
             throw new Error('Perp client Positions has not been instantiated');
         const position = await this.client.positions.getTakerPositionByTickerSymbol(
-            market.internalName,
+            market.externalName,
             { cache: false }
         );
         return position || null;
@@ -113,7 +113,7 @@ export class PerpV2Client {
     async getMarkPrice(market: Market) {
         if (!this.client.clearingHouse)
             throw new Error('Perp client Clearinghouse has not been instantiated');
-        const perpMarket = this.client.markets.getMarket({ tickerSymbol: market.internalName });
+        const perpMarket = this.client.markets.getMarket({ tickerSymbol: market.externalName });
         const prices = await perpMarket.getPrices();
         return prices.markPrice.toNumber();
     }
@@ -134,7 +134,7 @@ export class PerpV2Client {
             }
         }
         const simulated = await this.client.contractReader.simulateOpenPosition({
-            baseTokenAddress: this.client.markets.marketMap[params.market.internalName].baseAddress,
+            baseTokenAddress: this.client.markets.marketMap[params.market.externalName].baseAddress,
             isBaseToQuote: params.direction === Direction.Long ? false : true,
             isExactInput,
             amount: new Big(params.amount),

@@ -62,6 +62,11 @@ export class Spread implements FundingExecution {
         }
         const spread = signed_percentage_difference_as_bps(shortPrice, longPrice);
         console.log(`${this.perpMarket.baseToken} - SPREAD: ${spread}. Perp price: ${perpQuote.averagePrice}. Hedge price: ${hedgeQuote.averagePrice}`);
+        const minSize = this.hedgeClient.marketInfo[this.hedgeMarket.externalName].minSize;
+        if (perpQuote.orderSize < minSize) {
+            console.log(`${this.perpMarket.baseToken} - Cannot execute. Order size [${perpQuote.orderSize}] < Hedge market min size [${minSize}]`);
+            return false;
+        }
         if (spread > this.minSpread) {
             return {
                 orderSize: perpQuote.orderSize,
@@ -70,4 +75,6 @@ export class Spread implements FundingExecution {
         }
         return false;
     }
+
+    onSuccess() {}
 }

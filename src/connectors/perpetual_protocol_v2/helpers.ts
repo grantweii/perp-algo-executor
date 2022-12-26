@@ -18,7 +18,7 @@ export default class PerpV2Helpers {
             baseToken,
             quoteToken: 'USD',
             type: MarketType.Future,
-            internalName: `${baseToken}USD`,
+            externalName: `${baseToken}USD`,
             exchange: Exchange.PerpetualProtocolV2,
         };
     }

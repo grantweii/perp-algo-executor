@@ -19,6 +19,8 @@ const getFundingConfigs = () => {
         if (!config.STRATEGY) throw new Error(`STRATEGY must be provided in the config`);
         if (!config.HEDGE_EXCHANGE)
             throw new Error(`HEDGE_EXCHANGE must be provided in the config`);
+        if (!config.HEDGE_QUOTE_TOKEN)
+            throw new Error(`HEDGE_QUOTE_TOKEN must be provided in the config`);
         if (!Object.values(Exchange).includes(config.HEDGE_EXCHANGE)) {
             throw new Error(`HEDGE_EXCHANGE must be one of ${Object.values(Exchange).join(', ')}`);
         }
@@ -57,6 +59,7 @@ const getFundingConfigs = () => {
         }
         fundingConfigs.push({
             baseToken: market,
+            quoteToken: config.HEDGE_QUOTE_TOKEN,
             hedgeExchange: config.HEDGE_EXCHANGE,
             executionParams,
             totalNotional: config.TOTAL_NOTIONAL,
@@ -72,12 +75,14 @@ const getFundingConfigs = () => {
 
 async function main() {
     const fundingConfigs = getFundingConfigs();
-    const perpMarkets: Market[] = fundingConfigs.map((config) => PerpV2Helpers.getMarket(config.baseToken));
+    const perpMarkets: Market[] = fundingConfigs.map((config) =>
+        PerpV2Helpers.getMarket(config.baseToken)
+    );
     const perpClient = await getPerpV2Client(perpMarkets);
 
     for (const config of fundingConfigs) {
         const perpMarket = PerpV2Helpers.getMarket(config.baseToken);
-        const hedgeMarket = getMarket(config.hedgeExchange, config.baseToken);
+        const hedgeMarket = getMarket(config.hedgeExchange, config.baseToken, config.quoteToken);
         const hedgeClient = await getHttpClient(config.hedgeExchange, [hedgeMarket]);
         const fundingRateArbEngine = new FundingRateArbEngine({
             hedgeClient,

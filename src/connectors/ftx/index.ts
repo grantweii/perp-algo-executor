@@ -3,13 +3,12 @@ import {
     Order,
     MarketResponse,
     Market,
-    MarketInfo,
     Position,
     Side,
     OrderType,
-    QuoteParams,
-    Quote,
     Orderbook,
+    TimeInForce,
+    Exchange,
 } from '../common';
 import { HttpClient, Request } from '../interface';
 import axios, {
@@ -20,10 +19,9 @@ import axios, {
 } from 'axios';
 import { CancelAllOrders, FtxOrder, GetOpenOrders, PlaceOrder } from './model/order';
 import { createHmac } from 'crypto';
-import { FtxMarket, GetMarkets, GetOrderbook } from './model/market';
+import { FtxMarket, GetMarkets } from './model/market';
 import { FtxPosition, GetPosition } from './model/position';
-import { Direction } from '../../strategies/interface';
-import Big from 'big.js';
+import { GetOrderbook } from './model/orderbook';
 
 export type FtxParameters = {
     apiKey: string;
@@ -37,13 +35,13 @@ type Response<T> = {
     error?: string;
 };
 
-export class FtxClient implements HttpClient {
+export class FtxClient extends HttpClient {
     private static readonly BASE_URL = 'https://ftx.com/api';
     private client: AxiosInstance;
     private apiSecret: string;
-    public marketInfo: Record<string, MarketInfo>;
 
     constructor(params: FtxParameters) {
+        super(Exchange.Ftx);
         const headers: AxiosRequestHeaders = {
             'Content-Type': 'application/json',
             'FTX-KEY': params.apiKey,
@@ -59,26 +57,6 @@ export class FtxClient implements HttpClient {
         this.client = client;
         this.apiSecret = params.apiSecret;
         this.marketInfo = {};
-    }
-
-    /**
-     * Validates and instantiates requested markets. Fails if there is an invalid market.
-     * @param requestedMarkets
-     */
-    async init(requestedMarkets: Market[]) {
-        const marketsResponse = await this.getMarkets();
-        const markets = requestedMarkets.map((requestedMarket) =>
-            marketsResponse.find((validMarket) => validMarket.name === requestedMarket.internalName)
-        );
-        for (const market of markets) {
-            if (!market)
-                throw new Error('Failed to initialise ftx client. Not all markets are valid');
-            this.marketInfo[market.name] = {
-                tickSize: market.priceIncrement,
-                minSize: market.minSize,
-                sizeIncrement: market.sizeIncrement,
-            };
-        }
     }
 
     private requestConfig<R extends Request>(request: R) {
@@ -119,24 +97,18 @@ export class FtxClient implements HttpClient {
     }
 
     async placeOrder(params: GenericPlaceOrder): Promise<Order> {
+        if (params.type === OrderType.Limit && !params.price) {
+            throw new Error('Price is required for limit order');
+        }
         const minSize = this.marketInfo[params.market].minSize;
         if (params.size < minSize) throw new Error(`Failed to send order. Order min size for ${params.market} is ${minSize}`);
-        const sizeDp = -Math.log10(this.marketInfo[params.market].sizeIncrement);
-        const priceDp = -Math.log10(this.marketInfo[params.market].tickSize);
-        const roundedSize = new Big(params.size).round(sizeDp).toNumber();
-        const roundedPrice = params.price ? new Big(params.price).round(priceDp).toNumber() : null;
-        const cleanedParams: GenericPlaceOrder = {
-            ...params,
-            size: roundedSize,
-            price: roundedPrice,
-        };
         const response: AxiosResponse<Response<FtxOrder>> = await this.client(
-            this.requestConfig(new PlaceOrder(cleanedParams))
+            this.requestConfig(new PlaceOrder(params))
         );
         if (!response.data.success || !response.data.result || response.data.error) {
             throw new Error(response.data.error);
         }
-        return response.data.result;
+        return PlaceOrder.deserialize(response.data.result);
     }
 
     async getMarkets(): Promise<MarketResponse[]> {
@@ -156,7 +128,7 @@ export class FtxClient implements HttpClient {
         if (!response.data.success || !response.data.result || response.data.error) {
             throw new Error(response.data.error);
         }
-        const position = response.data.result.find((p) => p.future == market.internalName);
+        const position = response.data.result.find((p) => p.future == market.externalName);
         if (!position || position.size === 0) return null;
         return GetPosition.deserialize(position);
     }
@@ -166,31 +138,30 @@ export class FtxClient implements HttpClient {
         if (!position) return null;
 
         const order = await this.placeOrder({
-            market: market.internalName,
+            market: market.externalName,
             side: position.side === Side.Buy ? Side.Sell : Side.Buy,
             price: null,
             type: OrderType.Market,
             size: position.size,
             reduceOnly: false,
-            ioc: true,
+            timeInForce: TimeInForce.IOC,
             postOnly: false,
         });
         return order;
     }
 
-    async cancelAllOrders(market?: Market): Promise<string> {
+    async cancelAllOrders(market?: Market): Promise<void> {
         const response: AxiosResponse<Response<string>> = await this.client(
-            this.requestConfig(new CancelAllOrders({ market: market?.internalName }))
+            this.requestConfig(new CancelAllOrders({ market: market?.externalName }))
         );
         if (!response.data.success || !response.data.result || response.data.error) {
             throw new Error(response.data.error);
         }
-        return response.data.result;
     }
 
     async getOpenOrders(market?: Market): Promise<Order[]> {
         const response: AxiosResponse<Response<Order[]>> = await this.client(
-            this.requestConfig(new GetOpenOrders({ market: market?.internalName }))
+            this.requestConfig(new GetOpenOrders({ market: market?.externalName }))
         );
         if (!response.data.success || !response.data.result || response.data.error) {
             throw new Error(response.data.error);
@@ -198,42 +169,13 @@ export class FtxClient implements HttpClient {
         return response.data.result;
     }
 
-    private async getOrderbook(market: Market, depth?: number) {
+    async getOrderbook(externalName: string, depth?: number) {
         const response: AxiosResponse<Response<Orderbook>> = await this.client(
-            this.requestConfig(new GetOrderbook({ marketName: market.internalName, depth }))
+            this.requestConfig(new GetOrderbook({ marketName: externalName, depth }))
         );
         if (!response.data.success || !response.data.result || response.data.error) {
             throw new Error(response.data.error);
         }
         return response.data.result;
-    }
-
-    async quote(params: QuoteParams): Promise<Quote> {
-        const orderbook = await this.getOrderbook(params.market, 100);
-        let runningNotional = 0;
-        let runningSize = 0;
-        let i = 0;
-        let price;
-        let volume;
-        const ladder = params.direction === Direction.Long ? orderbook.asks : orderbook.bids;
-        while (runningNotional < params.orderNotional) {
-            price = ladder[i][0];
-            volume = ladder[i][1];
-            const notional = price * volume;
-            const remainingNotional = params.orderNotional - runningNotional;
-            if (remainingNotional < notional) {
-                const remainingSize = remainingNotional / price;
-                runningSize += remainingSize;
-                runningNotional += remainingNotional;
-            } else {
-                runningSize += volume;
-                runningNotional += notional;
-            }
-            i++;
-        }
-        return {
-            averagePrice: runningNotional / runningSize,
-            orderSize: runningSize,
-        };
     }
 }

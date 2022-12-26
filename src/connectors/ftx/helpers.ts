@@ -23,7 +23,7 @@ export default class FtxHelpers {
                     baseToken: token,
                     quoteToken: 'USD',
                     type: marketType,
-                    internalName: `${token}-PERP`,
+                    externalName: `${token}-PERP`,
                     exchange: Exchange.Ftx,
                 };
             }
@@ -32,7 +32,7 @@ export default class FtxHelpers {
                     baseToken: token,
                     quoteToken: 'USD',
                     type: marketType,
-                    internalName: `${token}/USD`,
+                    externalName: `${token}/USD`,
                     exchange: Exchange.Ftx,
                 };
             }

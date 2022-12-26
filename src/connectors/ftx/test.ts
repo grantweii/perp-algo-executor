@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import FtxHelpers from './helpers';
-import { Exchange, Market, MarketType, OrderType, Side } from '../common';
+import { Exchange, Market, MarketType, OrderType, Side, TimeInForce } from '../common';
 import { HttpClient } from '../interface';
 import { getHttpClient } from '..';
 import { describe } from 'mocha';
@@ -38,8 +38,8 @@ describe('Ftx client', () => {
                 side: Side.Buy,
                 size: 0.002,
                 reduceOnly: false,
-                ioc: false,
                 postOnly: true,
+                timeInForce: TimeInForce.GTC,
             });
             expect(order.market).to.be.eql('ETH-PERP');
             expect(order.side).to.be.eql(Side.Buy);
@@ -47,7 +47,7 @@ describe('Ftx client', () => {
             expect(order.type).to.be.eql(OrderType.Limit);
             expect(order.size).to.be.eql(0.002);
             expect(order.reduceOnly).to.be.eql(false);
-            expect(order.ioc).to.be.eql(false);
+            expect(order.timeInForce).to.be.eql(TimeInForce.GTC);
             expect(order.postOnly).to.be.eql(true);
         });
         it('should cancel existing orders', async () => {
@@ -68,8 +68,8 @@ describe('Ftx client', () => {
                 side: Side.Sell,
                 size: 0.001,
                 reduceOnly: false,
-                ioc: true,
                 postOnly: false,
+                timeInForce: TimeInForce.IOC,
             });
             expect(order.market).to.be.eql('BTC-PERP');
             expect(order.side).to.be.eql(Side.Sell);
@@ -77,7 +77,7 @@ describe('Ftx client', () => {
             expect(order.type).to.be.eql(OrderType.Market);
             expect(order.size).to.be.eql(0.001);
             expect(order.reduceOnly).to.be.eql(false);
-            expect(order.ioc).to.be.eql(true);
+            expect(order.timeInForce).to.be.eql(TimeInForce.IOC);
             expect(order.postOnly).to.be.eql(false);
         });
         it('should close the previous market order position', async () => {
@@ -90,7 +90,6 @@ describe('Ftx client', () => {
             expect(order.type).to.be.eql(OrderType.Market);
             expect(order.size).to.be.eql(0.001);
             expect(order.reduceOnly).to.be.eql(false);
-            expect(order.ioc).to.be.eql(true);
             expect(order.postOnly).to.be.eql(false);
         });
     });
