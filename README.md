@@ -18,7 +18,8 @@ Edit the trading parameters in `src/config.json`:
 {
     "AAVE": {
         "STRATEGY": "spread",
-        "HEDGE_EXCHANGE": "ftx",
+        "HEDGE_EXCHANGE": "binance",
+        "HEDGE_QUOTE_TOKEN": "USDT",
         "TOTAL_NOTIONAL": 200,
         "PERP_DIRECTION": "long",
         "MIN_SPREAD": 25,
@@ -26,7 +27,8 @@ Edit the trading parameters in `src/config.json`:
     },
     "ETH": {
         "STRATEGY": "twap",
-        "HEDGE_EXCHANGE": "ftx",
+        "HEDGE_EXCHANGE": "binance",
+        "HEDGE_QUOTE_TOKEN": "BUSD",
         "TOTAL_NOTIONAL": 200,
         "PERP_DIRECTION": "short",
         "PARTS": 2,
