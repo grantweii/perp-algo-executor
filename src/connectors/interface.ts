@@ -54,7 +54,7 @@ export abstract class HttpClient {
         }
         if (invalidMarkets.length)
             throw new Error(
-                `Not all requested binance markets were valid. Invalid: ${invalidMarkets
+                `Not all requested ${this.exchange} markets were valid. Invalid: ${invalidMarkets
                     .map((m) => m.externalName)
                     .join(', ')}`
             );
