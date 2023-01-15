@@ -2,8 +2,6 @@
 
 A simple funding rate arbitrageur strategy for perpetual protocol v2. Please note that it uses naive strategies and serves as a template for developers to create their own arbitraging strategy. Use it at your own risk!
 
----
-
 ## How it works
 
 1. Do your own analysis and decide which markets you would like to open positions for
@@ -26,8 +24,6 @@ A simple funding rate arbitrageur strategy for perpetual protocol v2. Please not
 1. [TWAP](https://river.com/learn/terms/t/time-weighted-average-price-twap/#:~:text=An%20asset's%20time%2Dweighted%20average,over%20a%20specified%20time%20period.)
 2. Spread $(short\_price - long\_price) \over ((short\_price + long\_price) / 2) * 10000$ (The higher the more favourable price is required to execute the child order)
 
----
-
 ## Installation
 
 ```bash
@@ -35,8 +31,6 @@ $ git clone https://github.com/grantweii/perp-funding-arbitrageur.git
 $ cd perp-funding-arbitrageur
 $ yarn install
 ```
-
----
 
 ## Configuration
 
@@ -80,8 +74,6 @@ Edit the trading parameters in `src/config.json`:
 }
 ```
 
----
-
 ## Environment Variables
 
 Provide your endpoint(s) and API keys in `.env`:
@@ -98,15 +90,11 @@ HTTP_RPC_URL={PRIVATE_HTTP_RPC}
 WS_RPC_URL={PRIVATE_WS_RPC}
 ```
 
----
-
 ## Run
 
 ```bash
 $ npm start
 ```
-
----
 
 ## Test
 
