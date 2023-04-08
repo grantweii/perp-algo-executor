@@ -1,9 +1,8 @@
 import { expect } from 'chai';
-import { Exchange, Market, OrderType, Side, TimeInForce } from '../common';
+import { Direction, Exchange, Market, OrderType, Side, TimeInForce } from '../common';
 import { HttpClient } from '../interface';
 import { getHttpClient, getMarket } from '..';
 import { describe } from 'mocha';
-import { Direction } from '../../strategies/interface';
 import { roundUp } from '../../utils/math';
 require('dotenv').config();
 

@@ -1,10 +1,5 @@
-import {
-    CanExecuteResponse,
-    Execution,
-    HedgeInfo,
-    PerpInfo,
-    TwapParameters,
-} from '../interface';
+import { HedgeInfo, PerpInfo } from '../interface';
+import { CanExecuteResponse, Execution, TwapParameters } from './interface';
 
 function determinePeriodInMs(period: string): number {
     if (period.endsWith('d')) {
@@ -63,9 +58,12 @@ export class Twap implements Execution {
                 amountType: 'quote',
             });
             if (this.hedge?.enabled) {
-                const minSize = this.hedge.client.marketInfo[this.hedge.market.externalName].minSize;
+                const minSize =
+                    this.hedge.client.marketInfo[this.hedge.market.externalName].minSize;
                 if (perpQuote.orderSize < minSize) {
-                    console.log(`${this.perp.market.baseToken} - Cannot execute. Order size [${perpQuote.orderSize}] < Hedge market min size [${minSize}]`);
+                    console.log(
+                        `${this.perp.market.baseToken} - Cannot execute. Order size [${perpQuote.orderSize}] < Hedge market min size [${minSize}]`
+                    );
                     return false;
                 }
             }
@@ -76,8 +74,10 @@ export class Twap implements Execution {
         }
         const remainingInMs = this.last + this.period - Date.now();
         const remainingMins = Math.floor(remainingInMs / 1000 / 60);
-        const remainingSecs = remainingInMs / 1000 % 60;
-        console.log(`${this.perp.market.baseToken} - TWAP - Remaining: ${remainingMins}m ${remainingSecs}s`);
+        const remainingSecs = (remainingInMs / 1000) % 60;
+        console.log(
+            `${this.perp.market.baseToken} - TWAP - Remaining: ${remainingMins}m ${remainingSecs}s`
+        );
         return false;
     }
 

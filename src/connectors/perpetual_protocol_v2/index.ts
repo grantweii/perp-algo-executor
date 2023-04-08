@@ -1,11 +1,10 @@
 import { bigNumber2BigAndScaleDown, PerpetualProtocol, PositionSide } from '@perp/sdk-curie';
 import { Wallet, providers, Contract } from 'ethers';
 import Metadata from '@perp/curie-deployments/optimism/core/metadata.json';
-import { Market, Quote } from '../common';
+import { Direction, Market, Quote } from '../common';
 import { GetQuote, PlacePerpV2Order } from './model/order';
 import Big from 'big.js';
 import { bpsToNatural } from '../../utils/math';
-import { Direction } from '../../strategies/interface';
 import ClearingHouseABI from '@perp/curie-deployments/optimism/core/artifacts/contracts/ClearingHouse.sol/ClearingHouse.json';
 
 const DEFAULT_OPTIMISM_HTTP_RPC_URL = 'https://mainnet.optimism.io';

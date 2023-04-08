@@ -1,6 +1,8 @@
 import { AlgoEngine } from '.';
-import { Direction, AlgoEngineParameters, State } from '../interface';
+import { State } from '../interface';
 import { Position as PerpPosition } from '@perp/sdk-curie';
+import { AlgoEngineParameters } from './interface';
+import { Direction } from '../../connectors/common';
 
 export default class UnhedgedAlgoEngine extends AlgoEngine {
     constructor(params: AlgoEngineParameters) {
@@ -85,8 +87,7 @@ export default class UnhedgedAlgoEngine extends AlgoEngine {
             let skipIteration = false;
             // downsize to total notional if we have opened too much
             if (perpNotionalDiff > this.acceptableDifference) {
-                const downsizeDirection =
-                    this.perp.direction === Direction.Long ? Direction.Short : Direction.Long;
+                const downsizeDirection = Direction.opposite(this.perp.direction);
                 const perpPrice = await this.perp.client.quote({
                     market: this.perp.market,
                     amount: perpNotionalDiff,

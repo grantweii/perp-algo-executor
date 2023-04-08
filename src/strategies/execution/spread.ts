@@ -1,12 +1,7 @@
+import { Direction } from '../../connectors/common';
 import { signed_percentage_difference_as_bps } from '../../utils/math';
-import {
-    CanExecuteResponse,
-    Direction,
-    Execution,
-    HedgeInfo,
-    PerpInfo,
-    SpreadParameters,
-} from '../interface';
+import { HedgeInfo, PerpInfo } from '../interface';
+import { CanExecuteResponse, Execution, SpreadParameters } from './interface';
 
 type SpreadExecutionParameters = {
     spread: SpreadParameters;
@@ -49,11 +44,15 @@ export class Spread implements Execution {
             longPrice = perpQuote.averagePrice;
         }
         const spread = signed_percentage_difference_as_bps(shortPrice, longPrice);
-        console.log(`${this.perp.market.baseToken} - SPREAD: ${spread}. Perp price: ${perpQuote.averagePrice}. Hedge price: ${hedgeQuote.averagePrice}`);
+        console.log(
+            `${this.perp.market.baseToken} - SPREAD: ${spread}. Perp price: ${perpQuote.averagePrice}. Hedge price: ${hedgeQuote.averagePrice}`
+        );
         if (this.hedge.enabled) {
             const minSize = this.hedge.client.marketInfo[this.hedge.market.externalName].minSize;
             if (perpQuote.orderSize < minSize) {
-                console.log(`${this.perp.market.baseToken} - Cannot execute. Order size [${perpQuote.orderSize}] < Hedge market min size [${minSize}]`);
+                console.log(
+                    `${this.perp.market.baseToken} - Cannot execute. Order size [${perpQuote.orderSize}] < Hedge market min size [${minSize}]`
+                );
                 return false;
             }
         }

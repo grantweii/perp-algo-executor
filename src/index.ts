@@ -2,10 +2,11 @@ import { getHttpClient, getMarket, getPerpV2Client } from './connectors';
 import PerpV2Helpers from './connectors/perpetual_protocol_v2/helpers';
 
 import HedgedAlgoEngine from './strategies/algo/hedged';
-import { Market } from './connectors/common';
+import { Direction, Market } from './connectors/common';
 import { getConfig } from './setup';
-import { Direction, AlgoEngineParameters, HedgeInfo } from './strategies/interface';
+import { HedgeInfo } from './strategies/interface';
 import UnhedgedAlgoEngine from './strategies/algo/unhedged';
+import { AlgoEngineParameters } from './strategies/algo/interface';
 require('dotenv').config();
 
 async function main() {

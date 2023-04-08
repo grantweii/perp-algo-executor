@@ -1,6 +1,17 @@
-import { Exchange, Market, MarketInfo, MarketResponse, Order, Orderbook, PlaceOrder, Position, Quote, QuoteParams } from './common';
+import {
+    Direction,
+    Exchange,
+    Market,
+    MarketInfo,
+    MarketResponse,
+    Order,
+    Orderbook,
+    PlaceOrder,
+    Position,
+    Quote,
+    QuoteParams,
+} from './common';
 import { Method } from 'axios';
-import { Direction } from '../strategies/interface';
 
 export interface Request {
     METHOD: Method; // Upper case only! eg. GET, POST
@@ -13,7 +24,7 @@ export interface Request {
 export abstract class HttpClient {
     public marketInfo: Record<string, MarketInfo> = {};
     private readonly exchange: Exchange;
-    
+
     constructor(exchange: Exchange) {
         this.exchange = exchange;
     }
@@ -30,7 +41,7 @@ export abstract class HttpClient {
     abstract getOpenOrders(market?: Market): Promise<Order[]>;
     /**
      * Calculates the expected average price given order notional.
-     * @param params 
+     * @param params
      */
     abstract getOrderbook(externalName: string, depth?: number): Promise<Orderbook>;
 
@@ -72,7 +83,7 @@ export abstract class HttpClient {
 
     /**
      * Calculates the expected average price given order notional.
-     * @param params 
+     * @param params
      */
     async quote(params: QuoteParams): Promise<Quote> {
         const orderbook = await this.getOrderbook(params.market.externalName, 100);

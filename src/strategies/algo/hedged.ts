@@ -1,16 +1,10 @@
 import { Position as PerpPosition, PositionSide } from '@perp/sdk-curie';
-import { OrderType, Position, Side, TimeInForce } from '../../connectors/common';
+import { Direction, OrderType, Position, Side, TimeInForce } from '../../connectors/common';
 import { PositionChangedEvent } from '../../connectors/perpetual_protocol_v2';
 import { round } from '../../utils/math';
 import { AlgoEngine } from '.';
-import {
-    Direction,
-    AlgoEngineParameters,
-    HedgeInfo,
-    PositionState,
-    PositionValidity,
-    State,
-} from '../interface';
+import { HedgeInfo, PositionState, PositionValidity, State } from '../interface';
+import { AlgoEngineParameters } from './interface';
 
 export default class HedgedAlgoEngine extends AlgoEngine {
     private readonly hedge: HedgeInfo;
@@ -73,8 +67,7 @@ export default class HedgedAlgoEngine extends AlgoEngine {
 
             if (placeHedge) {
                 // -exchangedPositionNotional is LONG, +exchangedPositionNotional is SHORT
-                const hedgeDirection =
-                    args.exchangedPositionNotional < 0 ? Direction.Short : Direction.Long;
+                const hedgeDirection = Direction.fromSignedAmount(args.exchangedPositionNotional);
                 const size = round(
                     Math.abs(args.exchangedPositionSize),
                     this.hedge.client.marketInfo[this.hedge.market.externalName].sizeIncrement
@@ -84,7 +77,7 @@ export default class HedgedAlgoEngine extends AlgoEngine {
                 );
                 await this.hedge.client.placeOrder({
                     market: this.hedge.market.externalName,
-                    side: hedgeDirection === Direction.Long ? Side.Buy : Side.Sell,
+                    side: Side.fromDirection(hedgeDirection),
                     price: null,
                     type: OrderType.Market,
                     size,
@@ -170,15 +163,13 @@ export default class HedgedAlgoEngine extends AlgoEngine {
                         message: `Perp position is ${perpPosition.side} but expected direction is ${this.perp.direction}`,
                     };
                 }
-                const hedgeDirection =
-                    this.perp.direction === Direction.Long ? Direction.Short : Direction.Long;
                 if (
-                    (hedgePosition.side === Side.Buy && hedgeDirection === Direction.Short) ||
-                    (hedgePosition.side === Side.Sell && hedgeDirection === Direction.Long)
+                    (hedgePosition.side === Side.Buy && this.hedge.direction === Direction.Short) ||
+                    (hedgePosition.side === Side.Sell && this.hedge.direction === Direction.Long)
                 ) {
                     return {
                         positionState: PositionState.WRONG_DIRECTION,
-                        message: `Hedge position is ${hedgePosition.side} but expected direction is ${hedgeDirection}`,
+                        message: `Hedge position is ${hedgePosition.side} but expected direction is ${this.hedge.direction}`,
                     };
                 }
             } else {
@@ -194,15 +185,13 @@ export default class HedgedAlgoEngine extends AlgoEngine {
                         message: `Perp position is ${perpPosition.side} and direction is also ${this.perp.direction}. Closing direction should be opposite`,
                     };
                 }
-                const hedgeDirection =
-                    this.perp.direction === Direction.Long ? Direction.Short : Direction.Long;
                 if (
-                    (hedgePosition.side === Side.Buy && hedgeDirection === Direction.Long) ||
-                    (hedgePosition.side === Side.Sell && hedgeDirection === Direction.Short)
+                    (hedgePosition.side === Side.Buy && this.hedge.direction === Direction.Long) ||
+                    (hedgePosition.side === Side.Sell && this.hedge.direction === Direction.Short)
                 ) {
                     return {
                         positionState: PositionState.WRONG_DIRECTION,
-                        message: `Hedge position is ${hedgePosition.side} and direction is ${hedgeDirection}. Closing direction should be opposite`,
+                        message: `Hedge position is ${hedgePosition.side} and direction is ${this.hedge.direction}. Closing direction should be opposite`,
                     };
                 }
             }
@@ -286,13 +275,12 @@ export default class HedgedAlgoEngine extends AlgoEngine {
                     sizeToDownsize,
                     this.hedge.client.marketInfo[this.hedge.market.externalName].sizeIncrement
                 );
-                const side = this.hedge.direction === Direction.Long ? Side.Sell : Side.Buy; // we are downsizing so use the opposite direction
                 console.log(
                     `${this.perp.market.baseToken} - Downsizing hedge: ${this.perp.direction} ${size}`
                 );
                 await this.hedge.client.placeOrder({
                     market: this.hedge.market.externalName,
-                    side,
+                    side: Side.fromOppositeDirection(this.hedge.direction), // we are downsizing so use the opposite direction
                     price: null,
                     type: OrderType.Market,
                     size,
@@ -326,7 +314,7 @@ export default class HedgedAlgoEngine extends AlgoEngine {
                 );
                 await this.hedge.client.placeOrder({
                     market: this.hedge.market.externalName,
-                    side: this.hedge.direction === Direction.Long ? Side.Buy : Side.Sell,
+                    side: Side.fromDirection(this.hedge.direction),
                     price: null,
                     type: OrderType.Market,
                     size,
@@ -412,7 +400,7 @@ export default class HedgedAlgoEngine extends AlgoEngine {
                 );
                 await this.hedge.client.placeOrder({
                     market: this.hedge.market.externalName,
-                    side: this.hedge.direction === Direction.Long ? Side.Buy : Side.Sell,
+                    side: Side.fromDirection(this.hedge.direction),
                     price: null,
                     type: OrderType.Market,
                     size,

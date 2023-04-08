@@ -1,5 +1,4 @@
-import { Direction } from '../../../strategies/interface';
-import { Market } from '../../common';
+import { Direction, Market } from '../../common';
 
 export type PlacePerpV2Order = {
     market: Market;

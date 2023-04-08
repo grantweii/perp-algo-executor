@@ -1,13 +1,11 @@
 import {
-    Direction,
-    ExecutionParameters,
-    ExecutionType,
-    AlgoEngineConfig,
     HedgeParameters,
 } from './strategies/interface';
 import Config from './config.json';
-import { Exchange } from './connectors/common';
+import { Direction, Exchange } from './connectors/common';
 import { isNil } from './utils/common';
+import { AlgoEngineConfig } from './strategies/algo/interface';
+import { ExecutionParameters, ExecutionType } from './strategies/execution/interface';
 
 function validateHedgeParams(config: AlgoEngineConfig): HedgeParameters {
     if (!config?.HEDGE?.EXCHANGE)

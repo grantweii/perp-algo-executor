@@ -1,9 +1,11 @@
 import EventEmitter from 'events';
 import { PositionChangedEvent } from '../../connectors/perpetual_protocol_v2';
 import { bpsToNatural } from '../../utils/math';
+import { Execution, ExecutionType } from '../execution/interface';
 import { Spread } from '../execution/spread';
 import { Twap } from '../execution/twap';
-import { ExecutionType, Execution, AlgoEngineParameters, PerpInfo, State } from '../interface';
+import { PerpInfo, State } from '../interface';
+import { AlgoEngineParameters } from './interface';
 
 export abstract class AlgoEngine {
     /**

@@ -1,4 +1,3 @@
-import { Direction } from '../strategies/interface';
 import { Dayjs } from 'dayjs';
 
 export enum Exchange {
@@ -15,6 +14,47 @@ export enum MarketType {
 export enum Side {
     Buy = 'buy',
     Sell = 'sell',
+}
+
+export namespace Side {
+    export function opposite(side: Side): Side {
+        return side === Side.Buy ? Side.Sell : Side.Buy;
+    }
+
+    export function fromSignedAmount(amount: number): Side {
+        return amount > 0 ? Side.Buy : Side.Sell;
+    }
+
+    export function fromDirection(direction: Direction): Side {
+        return direction === Direction.Long ? Side.Buy : Side.Sell;
+    }
+
+    export function fromOppositeDirection(direction: Direction): Side {
+        return direction === Direction.Long ? Side.Sell : Side.Buy;
+    }
+}
+
+export enum Direction {
+    Long = 'long',
+    Short = 'short',
+}
+
+export namespace Direction {
+    export function opposite(direction: Direction): Direction {
+        return direction === Direction.Long ? Direction.Short : Direction.Long;
+    }
+
+    export function fromSignedAmount(amount: number): Direction {
+        return amount > 0 ? Direction.Long : Direction.Short;
+    }
+
+    export function fromSide(side: Side): Direction {
+        return side === Side.Buy ? Direction.Long : Direction.Short;
+    }
+
+    export function fromOppositeSide(side: Side): Direction {
+        return side === Side.Buy ? Direction.Short : Direction.Long;
+    }
 }
 
 export enum OrderType {
