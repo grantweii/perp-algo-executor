@@ -7,7 +7,7 @@
         },
         "EXECUTION": {
             "STRATEGY": "spread",
-            "MIN_SPREAD": -20,
+            "MIN_SPREAD": -5,
             "ORDER_NOTIONAL": 100
         },
         "TOTAL_NOTIONAL": 200,
@@ -25,8 +25,9 @@
             "PERIOD": "5m"
         },
         "TOTAL_NOTIONAL": 200,
-        "PERP_DIRECTION": "short",
+        "PERP_DIRECTION": "long",
         "POLL_INTERVAL": 5000,
+        "HIDE_SIZE": true,
         "CLOSE_ONLY": true
     }
 }

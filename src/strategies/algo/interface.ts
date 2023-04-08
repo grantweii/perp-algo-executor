@@ -11,6 +11,7 @@ export type AlgoEngineParameters = {
     pollInterval?: number; // milliseconds
     slippage?: number; // in bps
     acceptableDifference?: number; // in bps
+    hideSize?: boolean;
 };
 
 export type AlgoEngineConfig = {

@@ -45,6 +45,7 @@ async function main() {
             pollInterval: cfg.pollInterval,
             slippage: cfg.slippage,
             acceptableDifference: cfg.acceptableDifference,
+            hideSize: cfg.hideSize,
         };
         if (hedge?.enabled) {
             const hedgedAlgoEngine = new HedgedAlgoEngine(algoEngineParams);

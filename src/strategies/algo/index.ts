@@ -51,6 +51,7 @@ export abstract class AlgoEngine {
                 spread: params.executionParams,
                 perp: params.perp,
                 hedge: params.hedge,
+                hideSize: params.hideSize || false,
             });
         } else {
             execution = new Twap({
@@ -58,6 +59,7 @@ export abstract class AlgoEngine {
                 totalNotional: params.totalNotional,
                 perp: params.perp,
                 hedge: params.hedge,
+                hideSize: params.hideSize || false,
             });
         }
         this.execution = execution;

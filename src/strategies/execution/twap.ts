@@ -1,3 +1,4 @@
+import { generateRandomBetween } from '../../utils/math';
 import { HedgeInfo, PerpInfo } from '../interface';
 import { CanExecuteResponse, Execution, TwapParameters } from './interface';
 
@@ -29,6 +30,7 @@ type TwapExecutionParameters = {
     hedge?: HedgeInfo;
     perp: PerpInfo;
     totalNotional: number;
+    hideSize: boolean;
 };
 
 export class Twap implements Execution {
@@ -37,6 +39,7 @@ export class Twap implements Execution {
     private readonly period: number; // in ms
     private readonly totalNotional: number;
     private readonly parts: number;
+    private readonly hideSize: boolean;
     orderNotional: number;
     private last: number | null = null; // in ms
 
@@ -47,14 +50,18 @@ export class Twap implements Execution {
         this.hedge = params.hedge;
         this.totalNotional = params.totalNotional;
         this.parts = params.twap.parts;
+        this.hideSize = params.hideSize;
     }
 
     async canExecute(): Promise<CanExecuteResponse> {
         if (!this.last || Date.now() - this.last >= this.period) {
+            const desiredNotional = this.hideSize
+                ? generateRandomBetween(0.9, 1.1) * this.orderNotional
+                : this.orderNotional;
             const perpQuote = await this.perp.client.quote({
                 market: this.perp.market,
                 direction: this.perp.direction,
-                amount: this.orderNotional,
+                amount: desiredNotional,
                 amountType: 'quote',
             });
             if (this.hedge?.enabled) {
@@ -68,7 +75,7 @@ export class Twap implements Execution {
                 }
             }
             return {
-                orderSize: this.orderNotional / perpQuote.averagePrice,
+                orderSize: perpQuote.orderSize,
                 price: perpQuote.averagePrice,
             };
         }
@@ -79,12 +86,6 @@ export class Twap implements Execution {
             `${this.perp.market.baseToken} - TWAP - Remaining: ${remainingMins}m ${remainingSecs}s`
         );
         return false;
-    }
-
-    // TODO: remove if not needed
-    updateOrderNotional(existingNotional: number): number {
-        this.orderNotional = (this.totalNotional - existingNotional) / this.parts;
-        return this.orderNotional;
     }
 
     onSuccess() {

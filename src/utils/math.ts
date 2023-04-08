@@ -33,3 +33,7 @@ export const round = (num: number, increment: number) => {
     const dps = -Math.log10(increment);
     return new Big(num).round(dps).toNumber();
 };
+
+export const generateRandomBetween = (min: number, max: number) => {
+    return Math.random() * (max - min) + min;
+};

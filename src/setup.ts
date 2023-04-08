@@ -88,6 +88,7 @@ export function getConfig() {
             pollInterval: config.POLL_INTERVAL,
             slippage: config.SLIPPAGE,
             acceptableDifference: config.ACCEPTABLE_DIFFERENCE,
+            hideSize: config.HIDE_SIZE,
         });
     }
     return configs;

@@ -1,5 +1,5 @@
 import { Direction } from '../../connectors/common';
-import { signed_percentage_difference_as_bps } from '../../utils/math';
+import { generateRandomBetween, signed_percentage_difference_as_bps } from '../../utils/math';
 import { HedgeInfo, PerpInfo } from '../interface';
 import { CanExecuteResponse, Execution, SpreadParameters } from './interface';
 
@@ -7,12 +7,14 @@ type SpreadExecutionParameters = {
     spread: SpreadParameters;
     hedge?: HedgeInfo;
     perp: PerpInfo;
+    hideSize: boolean;
 };
 
 export class Spread implements Execution {
     private readonly hedge: HedgeInfo;
     private readonly perp: PerpInfo;
     private readonly minSpread: number;
+    private readonly hideSize: boolean;
     readonly orderNotional: number;
 
     constructor(params: SpreadExecutionParameters) {
@@ -21,18 +23,22 @@ export class Spread implements Execution {
         this.perp = params.perp;
         this.orderNotional = params.spread.orderNotional;
         this.minSpread = params.spread.minSpread;
+        this.hideSize = params.hideSize;
     }
 
     async canExecute(): Promise<CanExecuteResponse> {
+        const desiredNotional = this.hideSize
+            ? generateRandomBetween(0.9, 1.1) * this.orderNotional
+            : this.orderNotional;
         const perpQuote = await this.perp.client.quote({
             market: this.perp.market,
             direction: this.perp.direction,
-            amount: this.orderNotional,
+            amount: desiredNotional,
             amountType: 'quote',
         });
         const hedgeQuote = await this.hedge.client.quote({
             market: this.hedge.market,
-            orderNotional: this.orderNotional,
+            orderNotional: desiredNotional,
             direction: this.hedge.direction,
         });
         let shortPrice, longPrice;
