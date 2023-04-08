@@ -1,19 +1,31 @@
 {
     "AAVE": {
-        "STRATEGY": "spread",
-        "HEDGE_EXCHANGE": "ftx",
+        "HEDGE": {
+            "ENABLED": true,
+            "EXCHANGE": "binance",
+            "QUOTE_TOKEN": "USDT"
+        },
+        "EXECUTION": {
+            "STRATEGY": "spread",
+            "MIN_SPREAD": -20,
+            "ORDER_NOTIONAL": 100
+        },
         "TOTAL_NOTIONAL": 200,
-        "PERP_DIRECTION": "long",
-        "MIN_SPREAD": 5,
-        "ORDER_NOTIONAL": 100
+        "PERP_DIRECTION": "long"
     },
     "ETH": {
-        "STRATEGY": "twap",
-        "HEDGE_EXCHANGE": "ftx",
+        "HEDGE": {
+            "ENABLED": false,
+            "EXCHANGE": "binance",
+            "QUOTE_TOKEN": "USDT"
+        },
+        "EXECUTION": {
+            "STRATEGY": "twap",
+            "PARTS": 2,
+            "PERIOD": "5m"
+        },
         "TOTAL_NOTIONAL": 200,
         "PERP_DIRECTION": "short",
-        "PARTS": 4,
-        "PERIOD": "20m",
         "POLL_INTERVAL": 5000,
         "CLOSE_ONLY": true
     }

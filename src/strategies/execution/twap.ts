@@ -1,10 +1,8 @@
-import { Market } from '../../connectors/common';
-import { HttpClient } from '../../connectors/interface';
-import { PerpV2Client } from '../../connectors/perpetual_protocol_v2';
 import {
     CanExecuteResponse,
-    Direction,
-    FundingExecution,
+    Execution,
+    HedgeInfo,
+    PerpInfo,
     TwapParameters,
 } from '../interface';
 
@@ -33,21 +31,15 @@ function determinePeriodInMs(period: string): number {
 
 type TwapExecutionParameters = {
     twap: TwapParameters;
-    perpClient: PerpV2Client;
-    hedgeClient: HttpClient;
-    perpMarket: Market;
-    hedgeMarket: Market;
-    perpDirection: Direction;
+    hedge?: HedgeInfo;
+    perp: PerpInfo;
     totalNotional: number;
 };
 
-export class Twap implements FundingExecution {
-    private readonly perpClient: PerpV2Client;
-    private readonly hedgeClient: HttpClient;
+export class Twap implements Execution {
+    private readonly hedge?: HedgeInfo;
+    private readonly perp: PerpInfo;
     private readonly period: number; // in ms
-    private readonly perpMarket: Market;
-    private readonly hedgeMarket: Market;
-    private readonly perpDirection: Direction;
     private readonly totalNotional: number;
     private readonly parts: number;
     orderNotional: number;
@@ -56,27 +48,26 @@ export class Twap implements FundingExecution {
     constructor(params: TwapExecutionParameters) {
         this.orderNotional = params.totalNotional / params.twap.parts;
         this.period = determinePeriodInMs(params.twap.period) / params.twap.parts;
-        this.perpClient = params.perpClient;
-        this.hedgeClient = params.hedgeClient;
-        this.perpMarket = params.perpMarket;
-        this.hedgeMarket = params.hedgeMarket;
-        this.perpDirection = params.perpDirection;
+        this.perp = params.perp;
+        this.hedge = params.hedge;
         this.totalNotional = params.totalNotional;
         this.parts = params.twap.parts;
     }
 
     async canExecute(): Promise<CanExecuteResponse> {
         if (!this.last || Date.now() - this.last >= this.period) {
-            const perpQuote = await this.perpClient.quote({
-                market: this.perpMarket,
-                direction: this.perpDirection,
+            const perpQuote = await this.perp.client.quote({
+                market: this.perp.market,
+                direction: this.perp.direction,
                 amount: this.orderNotional,
                 amountType: 'quote',
             });
-            const minSize = this.hedgeClient.marketInfo[this.hedgeMarket.externalName].minSize;
-            if (perpQuote.orderSize < minSize) {
-                console.log(`${this.perpMarket.baseToken} - Cannot execute. Order size [${perpQuote.orderSize}] < Hedge market min size [${minSize}]`);
-                return false;
+            if (this.hedge?.enabled) {
+                const minSize = this.hedge.client.marketInfo[this.hedge.market.externalName].minSize;
+                if (perpQuote.orderSize < minSize) {
+                    console.log(`${this.perp.market.baseToken} - Cannot execute. Order size [${perpQuote.orderSize}] < Hedge market min size [${minSize}]`);
+                    return false;
+                }
             }
             return {
                 orderSize: this.orderNotional / perpQuote.averagePrice,
@@ -86,7 +77,7 @@ export class Twap implements FundingExecution {
         const remainingInMs = this.last + this.period - Date.now();
         const remainingMins = Math.floor(remainingInMs / 1000 / 60);
         const remainingSecs = remainingInMs / 1000 % 60;
-        console.log(`${this.perpMarket.baseToken} - TWAP - Remaining: ${remainingMins}m ${remainingSecs}s`);
+        console.log(`${this.perp.market.baseToken} - TWAP - Remaining: ${remainingMins}m ${remainingSecs}s`);
         return false;
     }
 
