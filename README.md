@@ -28,8 +28,8 @@ To add your own strategy, simply implement the Execution interface in src/strate
 ## Installation
 
 ```bash
-$ git clone https://github.com/grantweii/perp-funding-arbitrageur.git
-$ cd perp-funding-arbitrageur
+$ git clone https://github.com/grantweii/perp-algo-executor.git
+$ cd perp-algo-executor
 $ yarn install
 ```
 
