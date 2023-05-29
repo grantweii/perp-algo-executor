@@ -1,5 +1,11 @@
 import { PerpV2Parameters } from '.';
-import { Exchange, Market, MarketType } from '../common';
+import {
+    DEFAULT_OPTIMISM_HTTP_RPC_URL,
+    DEFAULT_OPTIMISM_WS_RPC_URL,
+    Exchange,
+    Market,
+    MarketType,
+} from '../common';
 
 export default class PerpV2Helpers {
     static getParameters(): PerpV2Parameters {
@@ -8,8 +14,8 @@ export default class PerpV2Helpers {
         }
         return {
             privateKey: process.env.PRIVATE_KEY,
-            httpRpcUrl: process.env.HTTP_RPC_URL,
-            wsRpcUrl: process.env.WS_RPC_URL,
+            httpRpcUrl: process.env.OPTIMISM_HTTP_RPC_URL || DEFAULT_OPTIMISM_HTTP_RPC_URL,
+            wsRpcUrl: process.env.OPTIMISM_WS_RPC_URL || DEFAULT_OPTIMISM_WS_RPC_URL,
         };
     }
 

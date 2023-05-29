@@ -10,7 +10,7 @@ export type AlgoEngineParameters = {
     closeOnly?: boolean;
     pollInterval?: number; // milliseconds
     slippage?: number; // in bps
-    acceptableDifference?: number; // in bps
+    acceptableDifference?: number; // in dollars
     hideSize?: boolean;
 };
 
@@ -34,6 +34,6 @@ export type AlgoEngineConfig = {
     CLOSE_ONLY?: boolean;
     POLL_INTERVAL?: number; // milliseconds
     SLIPPAGE?: number; // in bps
-    ACCEPTABLE_DIFFERENCE?: number; // in bps
+    ACCEPTABLE_DIFFERENCE?: number; // in dollars
     HIDE_SIZE?: boolean;
 };

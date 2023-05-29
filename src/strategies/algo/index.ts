@@ -19,7 +19,7 @@ export abstract class AlgoEngine {
     /**
      * Max slippage on perp.
      */
-    protected readonly slippage: number = 100;
+    protected readonly slippage: number = 50;
     /**
      * Upper bound for difference in notional value.
      * ie. If perp notional is $100, hedge notional must be no more than $105, or less than $95 etc.
@@ -42,9 +42,7 @@ export abstract class AlgoEngine {
         if (params.closeOnly) this.closeOnly = true;
         if (params.pollInterval) this.INTERVAL = params.pollInterval;
         if (params.slippage) this.slippage = params.slippage;
-        if (params.acceptableDifference)
-            this.acceptableDifference =
-                bpsToNatural(params.acceptableDifference) * params.totalNotional;
+        if (params.acceptableDifference) this.acceptableDifference = params.acceptableDifference;
         let execution: Execution;
         if (params.executionParams.strategy === ExecutionType.Spread) {
             execution = new Spread({

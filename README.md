@@ -1,6 +1,7 @@
-# Perp Funding Rate Arbitrageur
+# Perp Algo Executor
 
-A simple funding rate arbitrageur strategy for perpetual protocol v2. Please note that it uses naive strategies and serves as a template for developers to create their own arbitraging strategy. Use it at your own risk!
+A simple algo executor for perpetual protocol v2. Please note that it uses simple strategies and serves as a template for developers to create their own strategy. Use it at your own risk!
+To add your own strategy, simply implement the Execution interface in src/strategies/execution/interface.ts and add the execution validity checks as necessary.
 
 ## How it works
 
@@ -39,37 +40,43 @@ Edit the trading parameters in `src/config.json`:
 ```javascript
 {
     "AAVE": {
-        "STRATEGY": "spread",
-        "HEDGE_EXCHANGE": "binance",
-        "HEDGE_QUOTE_TOKEN": "USDT",
-        "TOTAL_NOTIONAL": 200,
+        "HEDGE": {
+            "ENABLED": true,
+            "EXCHANGE": "binance",
+            "QUOTE_TOKEN": "USDT"
+        },
+        "EXECUTION": {
+            "STRATEGY": "spread",
+            "MIN_SPREAD": -5, // basis points
+            "ORDER_NOTIONAL": 2500 // dollars
+        },
+        "TOTAL_NOTIONAL": 20000, // dollars
         "PERP_DIRECTION": "long",
-        "MIN_SPREAD": 25, // in bps
-        "ORDER_NOTIONAL": 100
-    },
-    "ETH": {
-        "STRATEGY": "twap",
-        "HEDGE_EXCHANGE": "binance",
-        "HEDGE_QUOTE_TOKEN": "BUSD",
-        "TOTAL_NOTIONAL": 200,
-        "PERP_DIRECTION": "short",
-        "PARTS": 2,
-        // eg. "5m" (minutes), "2h" (hours), "1d" (days)
-        "PERIOD": "5m",
-        // optional, default false
-        "CLOSE_ONLY": true,
-        // optional (ms), default 2000
-        "POLL_INTERVAL": 5000,
-         // optional (bps), default 100
-        "SLIPPAGE": 100,
+        "SLIPPAGE": 10, // optional (bps), default 50
         /**
          * Buffer that is acceptable in calculations.
-         * eg. 50 on a total notional of $1000 means $5 buffer is acceptable.
-         *  - used in determining strategy completion ie. notional between $995 and $1005 will be considered complete when OPENING
-         *  - used in determining position validity ie. $5 difference between hedge notional and perp notional is still considered valid
-         * optional (bps)
+         *  - used in determining strategy completion ie. notional between $980 and $1020 will be considered complete when OPENING
+         *  - used in determining position validity ie. $20 difference between hedge notional and perp notional is still considered valid
+         * optional (dollars), default 5
          */
-        "ACCEPTABLE_DIFFERENCE": 50
+        "ACCEPTABLE_DIFFERENCE": 20
+    },
+    "ETH": {
+        "HEDGE": {
+            "ENABLED": false,
+            "EXCHANGE": "binance",
+            "QUOTE_TOKEN": "USDT"
+        },
+        "EXECUTION": {
+            "STRATEGY": "twap",
+            "PARTS": 10,
+            "PERIOD": "1h", // eg. "5m" (minutes), "2h" (hours), "1d" (days)
+        },
+        "TOTAL_NOTIONAL": 100000, // dollars
+        "PERP_DIRECTION": "short",
+        "POLL_INTERVAL": 5000, // optional (ms), default 2000
+        "HIDE_SIZE": true, // optional, default false
+        "CLOSE_ONLY": true // optional, default false
     }
 }
 ```
@@ -81,13 +88,12 @@ Provide your endpoint(s) and API keys in `.env`:
 ```bash
 # secrets
 PRIVATE_KEY={WALLET_PRIVATE_KEY}
-FTX_API_KEY={FTX_API_KEY}
-FTX_API_SECRET={FTX_API_SECRET}
-FTX_SUBACCOUNT={FTX_SUBACCOUNT_NAME}
+BINANCE_API_KEY={BINANCE_API_KEY}
+BINANCE_API_SECRET={BINANCE_API_SECRET}
 
 # optional
-HTTP_RPC_URL={PRIVATE_HTTP_RPC}
-WS_RPC_URL={PRIVATE_WS_RPC}
+OPTIMISM_HTTP_RPC_URL={PRIVATE_HTTP_RPC}
+OPTIMISM_WS_RPC_URL={PRIVATE_WS_RPC}
 ```
 
 ## Run

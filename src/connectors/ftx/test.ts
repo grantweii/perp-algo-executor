@@ -6,7 +6,7 @@ import { getHttpClient } from '..';
 import { describe } from 'mocha';
 require('dotenv').config();
 
-describe('Ftx client', () => {
+describe.skip('Ftx client', () => {
     let client: HttpClient;
     let markets: Market[];
     before(async () => {

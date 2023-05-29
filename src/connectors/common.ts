@@ -1,5 +1,8 @@
 import { Dayjs } from 'dayjs';
 
+export const DEFAULT_OPTIMISM_HTTP_RPC_URL = "https://mainnet.optimism.io";
+export const DEFAULT_OPTIMISM_WS_RPC_URL = "wss://ws-mainnet.optimism.io";
+
 export enum Exchange {
     Ftx = 'ftx',
     PerpetualProtocolV2 = 'perpetual_protocol_v2',
