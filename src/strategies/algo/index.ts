@@ -4,7 +4,7 @@ import { bpsToNatural } from '../../utils/math';
 import { Execution, ExecutionType } from '../execution/interface';
 import { Spread } from '../execution/spread';
 import { Twap } from '../execution/twap';
-import { PerpInfo, State } from '../interface';
+import { Event, PerpInfo, State } from '../interface';
 import { AlgoEngineParameters } from './interface';
 
 export abstract class AlgoEngine {
@@ -75,7 +75,7 @@ export abstract class AlgoEngine {
             params.trader === this.perp.client.wallet.address &&
             params.baseToken === this.perp.client.baseTokenAddress(this.perp.market)
         ) {
-            this.eventEmitter.emit('perp_fill', params);
+            this.eventEmitter.emit(Event.PerpFill, params);
         }
     }
 

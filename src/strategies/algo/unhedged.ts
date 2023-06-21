@@ -1,5 +1,5 @@
 import { AlgoEngine } from '.';
-import { State } from '../interface';
+import { Event, State } from '../interface';
 import { Position as PerpPosition } from '@perp/sdk-curie';
 import { AlgoEngineParameters } from './interface';
 import { Direction } from '../../connectors/common';
@@ -39,7 +39,10 @@ export default class UnhedgedAlgoEngine extends AlgoEngine {
     onPerpFill() {
         // create timeout
         const timeout = setTimeout(() => this.handleTimeout(), this.TIMEOUT_INTERVAL);
-        this.eventEmitter.once('perp_fill', async () => {
+        // should only have 1 listener at a time
+        if (this.eventEmitter.listenerCount(Event.PerpFill) >= 1) return;
+
+        this.eventEmitter.once(Event.PerpFill, async () => {
             // clear timeout before placing order to avoid race condition
             clearTimeout(timeout);
             console.log(`${this.perp.market.baseToken} - Received perp fill`);

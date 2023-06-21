@@ -3,7 +3,7 @@ import { Direction, OrderType, Position, Side, TimeInForce } from '../../connect
 import { PositionChangedEvent } from '../../connectors/perpetual_protocol_v2';
 import { round } from '../../utils/math';
 import { AlgoEngine } from '.';
-import { HedgeInfo, PositionState, PositionValidity, State } from '../interface';
+import { Event, HedgeInfo, PositionState, PositionValidity, State } from '../interface';
 import { AlgoEngineParameters } from './interface';
 
 export default class HedgedAlgoEngine extends AlgoEngine {
@@ -61,7 +61,10 @@ export default class HedgedAlgoEngine extends AlgoEngine {
     onPerpFill(placeHedge: boolean) {
         // create timeout
         const timeout = setTimeout(() => this.handleTimeout(), this.TIMEOUT_INTERVAL);
-        this.eventEmitter.once('perp_fill', async (args: PositionChangedEvent) => {
+        // should only have 1 listener at a time
+        if (this.eventEmitter.listenerCount(Event.PerpFill) >= 1) return;
+
+        this.eventEmitter.once(Event.PerpFill, async (args: PositionChangedEvent) => {
             // clear timeout before placing order to avoid race condition
             clearTimeout(timeout);
 

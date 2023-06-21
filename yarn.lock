@@ -429,23 +429,24 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@perp/curie-deployments@2022.10.5-1664940982527":
-  version "2022.10.5-1664940982527"
-  resolved "https://registry.yarnpkg.com/@perp/curie-deployments/-/curie-deployments-2022.10.5-1664940982527.tgz#ce191ad969b9e88a939fcae8409968d41665b0c2"
-  integrity sha512-07fv7vu8okF/9GevvOKoeUhOJqQNPAvOSdLj1DBffPtuq/dnUfP5Ck/CJopIm+FjRJVer8VX3Nx7IdQEo/nhBw==
+"@perp/curie-deployments@2023.4.12-1681295833590":
+  version "2023.4.12-1681295833590"
+  resolved "https://registry.yarnpkg.com/@perp/curie-deployments/-/curie-deployments-2023.4.12-1681295833590.tgz#d4f0afe189ec37799dc32b53242db56fc18f2f14"
+  integrity sha512-NJbTy3frix5AQS5Bk/littykkmQ/m1rFD5HUQG8b0SDVGsqvIsSr5NSlhwb+UGJS7EHtgxevh4P4dTPc4dN6lQ==
 
-"@perp/curie-deployments@^2022.10.20-1666239114830":
-  version "2022.10.20-1666239114830"
-  resolved "https://registry.yarnpkg.com/@perp/curie-deployments/-/curie-deployments-2022.10.20-1666239114830.tgz#5fa8c9c3a25225b9ad28610b2cc028bc4646d535"
-  integrity sha512-/uLvW3pwRvo/MJlhyCBx6/Clk7VZaYQe44WdGXYaae5V5H6buU1Ts1fOQUpJ3oEXnbIBD8dK/6nSMWCErYVGbA==
+"@perp/curie-deployments@^2023.6.20-1687256647605":
+  version "2023.6.20-1687256647605"
+  resolved "https://registry.yarnpkg.com/@perp/curie-deployments/-/curie-deployments-2023.6.20-1687256647605.tgz#0064fec38c49825f2d1e49617924af6425baa30e"
+  integrity sha512-/yh5eCFq2BuRhIPu0OnnRUc32nddmE2maPLF+/7jZ/cc9xAXK+P1ntV5QAd6hc48Hf8JcN9bDgajKB+nJbR3Og==
 
-"@perp/sdk-curie@^1.14.0":
-  version "1.14.0"
-  resolved "https://registry.yarnpkg.com/@perp/sdk-curie/-/sdk-curie-1.14.0.tgz#86d420690dd72bf913edb76bad77251f18dd4b8e"
-  integrity sha512-eSHFLtIeA9rS8xLYAb60CW/NVYT/d4UW20R4UU9RQ30YToNA65PEkuWvcc2L5x+8S7YW6G0miniNmQvawpRvLA==
+"@perp/sdk-curie@^1.20.0":
+  version "1.20.0"
+  resolved "https://registry.yarnpkg.com/@perp/sdk-curie/-/sdk-curie-1.20.0.tgz#3d070a3626b35d605003523705d9781c8a6e711e"
+  integrity sha512-J1cVhqfbI04glsDZjbZT82OG31U9yLRzc4pPVBhEhzMk74PY8EhiO6BDbo8X/5AreMQk+8HKzbSXr/FhBR6yag==
   dependencies:
-    "@perp/curie-deployments" "2022.10.5-1664940982527"
+    "@perp/curie-deployments" "2023.4.12-1681295833590"
     cross-fetch "3.1.5"
+    exponential-backoff "3.1.0"
 
 "@tsconfig/node10@^1.0.7":
   version "1.0.9"
@@ -1281,6 +1282,11 @@ ethers@^5.7.2:
     "@ethersproject/wallet" "5.7.0"
     "@ethersproject/web" "5.7.1"
     "@ethersproject/wordlists" "5.7.0"
+
+exponential-backoff@3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/exponential-backoff/-/exponential-backoff-3.1.0.tgz#9409c7e579131f8bd4b32d7d8094a911040f2e68"
+  integrity sha512-oBuz5SYz5zzyuHINoe9ooePwSu0xApKWgeNzok4hZ5YKXFh9zrQBEM15CXqoZkJJPuI2ArvqjPQd8UKJA753XA==
 
 fast-deep-equal@^3.1.1, fast-deep-equal@^3.1.3:
   version "3.1.3"

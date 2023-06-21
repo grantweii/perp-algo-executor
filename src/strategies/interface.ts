@@ -2,6 +2,10 @@ import { Direction, Exchange, Market } from '../connectors/common';
 import { HttpClient } from '../connectors/interface';
 import { PerpV2Client } from '../connectors/perpetual_protocol_v2';
 
+export enum Event {
+    PerpFill = 'PERP_FILL',
+}
+
 export type HedgeInfo = {
     enabled: boolean;
     client: HttpClient;
